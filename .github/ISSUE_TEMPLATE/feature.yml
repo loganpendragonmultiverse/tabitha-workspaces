@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a focused improvement that fits the local-first scope.
+title: 'Feature: '
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe the workflow problem, not only the proposed interface.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Permissions, privacy, and browser differences
+      description: Note whether this needs new permissions, network access, or browser-specific behavior.
+    validations:
+      required: true

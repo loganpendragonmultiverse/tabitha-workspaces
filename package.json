@@ -1,0 +1,56 @@
+{
+  "name": "tabitha-workspaces",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A private, local-first workspace and session manager for Chromium and Firefox.",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox --mv3",
+    "prepare": "node scripts/generate-icons.mjs && wxt prepare",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:firefox": "web-ext lint --source-dir .output/firefox-mv3",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "build": "npm run build:chromium && npm run build:firefox",
+    "build:chromium": "wxt build -b chrome --mv3",
+    "build:firefox": "wxt build -b firefox --mv3",
+    "check:build": "node scripts/validate-build.mjs",
+    "zip": "npm run zip:chromium && npm run zip:firefox",
+    "zip:chromium": "wxt zip -b chrome --mv3",
+    "zip:firefox": "wxt zip -b firefox --mv3",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:build && npm run lint:firefox && npm run zip"
+  },
+  "dependencies": {
+    "preact": "10.29.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.2",
+    "@preact/preset-vite": "2.10.6",
+    "@types/node": "24.10.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "9.39.2",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "16.5.0",
+    "prettier": "3.9.0",
+    "sharp": "0.35.3",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.10",
+    "web-ext": "10.5.0",
+    "wxt": "0.20.27"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "overrides": {
+    "adm-zip": "0.6.0",
+    "esbuild": "0.28.1",
+    "shell-quote": "1.10.0",
+    "tmp": "0.2.7",
+    "uuid": "11.1.1"
+  }
+}

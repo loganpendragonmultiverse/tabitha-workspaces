@@ -1,0 +1,46 @@
+name: Bug report
+description: Report reproducible incorrect behavior.
+title: 'Bug: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Remove private URLs, notes, and exported library data before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: Tabitha Workspaces version
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser family
+      options: [Chrome, Edge, Other Chromium, Firefox]
+    validations:
+      required: true
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser version
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed private browsing data and credentials from this report.
+          required: true
