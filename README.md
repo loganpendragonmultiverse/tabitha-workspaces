@@ -108,3 +108,7 @@ bugs and focused feature requests, [SUPPORT.md](SUPPORT.md) for usage help, and
 ## License
 
 Tabitha Workspaces is licensed under the GNU General Public License version 3. See [LICENSE](LICENSE).
+
+## More open-source projects
+
+This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
