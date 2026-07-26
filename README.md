@@ -7,6 +7,15 @@ without requiring an account or transmitting browsing data.
 This project is a maintained, independent successor inspired by the discontinued
 [robkam/Tabitha](https://github.com/robkam/Tabitha). See [NOTICE.md](NOTICE.md) for attribution.
 
+## Download
+
+- [Download Tabitha Workspaces 1.1.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.1.0/tabitha-workspaces-1.1.0-chrome.zip)
+- [Download Tabitha Workspaces 1.1.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.1.0/tabitha-workspaces-1.1.0-firefox.zip)
+- [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
+
+After downloading, follow the short browser-specific steps in
+[INSTALLATION.md](INSTALLATION.md).
+
 ## What it does
 
 - Organizes separate workspaces with folders and ordered collections.
@@ -18,8 +27,13 @@ This project is a maintained, independent successor inspired by the discontinued
 - Searches workspace names, folders, sessions, saved tabs, URLs, notes, and tags.
 - Soft-deletes workspaces, folders, sessions, links, and notes into a recycle bin.
 - Reorders workspaces and sessions with drag and drop.
+- Moves sessions between workspaces by dragging them onto the workspace sidebar or editing them.
+- Switches saved sessions between card and compact list layouts.
+- Renames recent sessions directly from the toolbar popup.
+- Optionally opens the dashboard when a new browser tab is created.
 - Creates optional replacement-style recovery snapshots on a user-selected interval.
 - Imports and exports a complete, versioned JSON backup.
+- Optionally synchronizes the newest library through a user-provided HTTPS WebDAV file.
 - Provides system, light, and dark themes, compact density, and a custom accent color.
 - Adds toolbar actions, page context menus, and keyboard shortcuts.
 
@@ -44,6 +58,10 @@ The extension requests only the following permissions:
 | `contextMenus`     | Provide Save page, Save window, and Open Tabitha actions.                      |
 | `unlimitedStorage` | Prevent larger session and note libraries from being evicted by normal quotas. |
 | `alarms`           | Schedule optional local recovery snapshots.                                    |
+
+When WebDAV sync is enabled, Tabitha asks separately for access to only the HTTPS server origin
+selected by the user. WebDAV credentials stay in local extension storage and are not included in
+library exports or remote backup files.
 
 No host permissions are requested. Read [PRIVACY.md](PRIVACY.md) for the complete policy.
 
@@ -77,8 +95,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.0.0-chrome.zip`
-- `.output/tabitha-workspaces-1.0.0-firefox.zip`
+- `.output/tabitha-workspaces-1.1.0-chrome.zip`
+- `.output/tabitha-workspaces-1.1.0-firefox.zip`
 
 ## Architecture
 
@@ -89,9 +107,9 @@ and data boundaries are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.m
 
 ## Limitations
 
-- Google Drive synchronization from the original proposal is intentionally not included. It would
-  require OAuth credentials, external data transmission, consent UX, remote failure handling, and
-  conflict resolution. JSON backup is the supported portability mechanism in version 1.
+- Cross-browser synchronization uses a user-provided WebDAV file. Its automatic mode is
+  last-write-wins using the library update time; use the manual upload/download controls before
+  making simultaneous changes on multiple devices.
 - Browser-internal pages such as `chrome://settings` and `about:config` cannot be restored by an
   extension and are omitted during capture.
 - Extension-store publication is not the same as a GitHub release. Chrome Web Store and Mozilla

@@ -7,10 +7,17 @@ import {
   isRestorableUrl,
 } from '../src/domain/library';
 import type { CapturedBrowserTab, Collection, SavedLink } from '../src/domain/types';
-import { getLibrary, updateLibrary } from '../src/storage/libraryStore';
+import {
+  getCloudSyncConfig,
+  publicCloudSyncConfig,
+  setCloudSyncConfig,
+} from '../src/storage/cloudSyncStore';
+import { getLibrary, libraryItem, updateLibrary } from '../src/storage/libraryStore';
+import { synchronizeWebDav, type SyncDirection } from '../src/sync/webdav';
 
 const DASHBOARD_PATH = '/dashboard.html';
 const SNAPSHOT_ALARM = 'tabitha-recovery-snapshot';
+const CLOUD_SYNC_ALARM = 'tabitha-cloud-sync';
 
 const openDashboard = async (route = ''): Promise<void> => {
   const base = browser.runtime.getURL(DASHBOARD_PATH);
@@ -100,7 +107,7 @@ const restoreCollection = async (collectionId: string): Promise<string> => {
   );
   if (plan.urls.length === 0) {
     return plan.skippedDuplicates > 0
-      ? 'Every saved tab is already open.'
+      ? 'Every saved tab is already open. Turn off “Skip tabs that are already open” in Settings to allow another copy.'
       : 'No restorable tabs were found.';
   }
   if (state.settings.restoreInNewWindow) {
@@ -151,6 +158,55 @@ const refreshSnapshotAlarm = async (): Promise<void> => {
   }
 };
 
+const refreshCloudSyncAlarm = async (): Promise<void> => {
+  const config = await getCloudSyncConfig();
+  await browser.alarms.clear(CLOUD_SYNC_ALARM);
+  if (config.enabled && config.url) {
+    await browser.alarms.create(CLOUD_SYNC_ALARM, { periodInMinutes: 5 });
+  }
+};
+
+const syncCloud = async (direction: SyncDirection): Promise<string> => {
+  const config = await getCloudSyncConfig();
+  if (direction === 'auto' && !config.enabled) return 'Automatic cloud sync is disabled.';
+  if (!config.url) throw new Error('Add a WebDAV backup URL in Settings first.');
+  try {
+    const result = await synchronizeWebDav(config, await getLibrary(), direction);
+    if (result.action === 'downloaded') await libraryItem.setValue(result.library);
+    await setCloudSyncConfig({ ...config, lastSyncedAt: Date.now(), lastError: null });
+    if (result.action === 'uploaded') return 'Cloud backup updated.';
+    if (result.action === 'downloaded') return 'Cloud backup restored.';
+    return 'Cloud backup is already up to date.';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Cloud sync failed.';
+    await setCloudSyncConfig({ ...config, lastError: message });
+    throw error;
+  }
+};
+
+const isNewTabUrl = (value?: string): boolean =>
+  Boolean(
+    value &&
+    [
+      'chrome://newtab/',
+      'edge://newtab/',
+      'brave://newtab/',
+      'vivaldi://newtab/',
+      'about:newtab',
+    ].includes(value),
+  );
+
+const maybeOpenDashboardForNewTab = async (tab: {
+  id?: number | undefined;
+  url?: string | undefined;
+  pendingUrl?: string | undefined;
+}) => {
+  if (tab.id === undefined || !isNewTabUrl(tab.pendingUrl ?? tab.url)) return;
+  const state = await getLibrary();
+  if (state.settings.openDashboardOnNewTab)
+    await browser.tabs.update(tab.id, { url: browser.runtime.getURL(DASHBOARD_PATH) });
+};
+
 const createMenus = async (): Promise<void> => {
   await browser.contextMenus.removeAll();
   browser.contextMenus.create({
@@ -174,6 +230,20 @@ export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(() => {
     void createMenus();
     void refreshSnapshotAlarm();
+    void refreshCloudSyncAlarm();
+  });
+
+  browser.runtime.onStartup.addListener(() => {
+    void refreshCloudSyncAlarm();
+    void syncCloud('auto').catch(() => undefined);
+  });
+
+  browser.tabs.onCreated.addListener((tab) => {
+    void maybeOpenDashboardForNewTab(tab);
+  });
+
+  browser.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+    if (changeInfo.url && isNewTabUrl(changeInfo.url)) void maybeOpenDashboardForNewTab(tab);
   });
 
   browser.commands.onCommand.addListener((command) => {
@@ -189,6 +259,7 @@ export default defineBackground(() => {
 
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === SNAPSHOT_ALARM) void captureWindow(undefined, 'Automatic recovery', true);
+    if (alarm.name === CLOUD_SYNC_ALARM) void syncCloud('auto').catch(() => undefined);
   });
 
   browser.storage.onChanged.addListener((_changes, area) => {
@@ -217,6 +288,15 @@ export default defineBackground(() => {
             return { ok: true, message: await restoreCollection(request.collectionId) };
           case 'get-live-tabs':
             return { ok: true, tabs: await getLiveTabs() };
+          case 'get-cloud-sync-config':
+            return { ok: true, syncConfig: publicCloudSyncConfig(await getCloudSyncConfig()) };
+          case 'save-cloud-sync-config': {
+            const config = await setCloudSyncConfig(request.config);
+            await refreshCloudSyncAlarm();
+            return { ok: true, syncConfig: publicCloudSyncConfig(config) };
+          }
+          case 'sync-cloud':
+            return { ok: true, message: await syncCloud(request.direction) };
         }
       } catch (error) {
         return {

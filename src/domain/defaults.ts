@@ -7,10 +7,13 @@ export const defaultSettings = (): Settings => ({
   density: 'comfortable',
   accent: DEFAULT_ACCENT,
   confirmBeforeRestore: true,
-  deduplicateOnRestore: true,
+  deduplicateOnRestore: false,
   restoreInNewWindow: true,
   automaticSnapshots: false,
   snapshotIntervalMinutes: 15,
+  sessionLayout: 'cards',
+  showWelcomeBanner: true,
+  openDashboardOnNewTab: false,
 });
 
 export const createId = (): string => crypto.randomUUID();

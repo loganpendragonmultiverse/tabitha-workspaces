@@ -117,9 +117,16 @@ header button {
   text-align: center;
   font-size: 11px;
 }
-.recent > button {
+.recent-item {
+  position: relative;
+  border-bottom: 1px solid #ececf2;
+}
+.recent-item:last-child {
+  border-bottom: 0;
+}
+.recent-open {
   width: 100%;
-  padding: 10px;
+  padding: 10px 57px 10px 10px;
   display: grid;
   grid-template-columns: 30px 1fr auto;
   gap: 9px;
@@ -127,13 +134,9 @@ header button {
   color: #20223a;
   background: none;
   border: 0;
-  border-bottom: 1px solid #ececf2;
   text-align: left;
 }
-.recent > button:last-child {
-  border-bottom: 0;
-}
-.recent > button > span {
+.recent-open > span {
   width: 28px;
   height: 28px;
   display: grid;
@@ -142,6 +145,38 @@ header button {
   background: #eef0ff;
   border-radius: 8px;
   font-weight: 800;
+}
+.recent-rename {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 5px;
+  color: #5b6df8;
+  background: none;
+  border: 0;
+  font-size: 8px;
+  font-weight: 700;
+}
+.rename-form {
+  padding: 9px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 5px;
+}
+.rename-form input {
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #cfd2e3;
+  border-radius: 7px;
+}
+.rename-form button {
+  padding: 6px;
+  color: #5b6df8;
+  background: none;
+  border: 0;
+  font-size: 8px;
+  font-weight: 700;
 }
 .recent div {
   display: grid;
@@ -186,7 +221,7 @@ header button {
   }
   header strong,
   .quick button,
-  .recent > button {
+  .recent-open {
     color: #f4f4fa;
   }
   .quick button,
@@ -194,7 +229,7 @@ header button {
     background: #20232f;
     border-color: #343747;
   }
-  .recent > button {
+  .recent-item {
     border-color: #343747;
   }
 }

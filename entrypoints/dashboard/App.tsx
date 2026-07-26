@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { browser } from 'wxt/browser';
-import type { BackgroundRequest, BackgroundResponse, LiveTab } from '../../src/browser/messages';
+import type {
+  BackgroundRequest,
+  BackgroundResponse,
+  CloudSyncPublicConfig,
+  LiveTab,
+} from '../../src/browser/messages';
 import { createId } from '../../src/domain/defaults';
 import { parseLibraryExport, serializeLibrary } from '../../src/domain/importExport';
 import {
@@ -181,6 +186,22 @@ export function App() {
     setDragged(null);
   };
 
+  const moveCollectionToWorkspace = async (workspaceId: string): Promise<void> => {
+    if (!library || dragged?.kind !== 'collection') return;
+    const now = Date.now();
+    await persist({
+      ...library,
+      collections: library.collections.map((item) => {
+        if (item.id !== dragged.id) return item;
+        const moved = { ...item, workspaceId, updatedAt: now };
+        delete moved.folderId;
+        return moved;
+      }),
+    });
+    setDragged(null);
+    setToast('Session moved to the selected workspace.');
+  };
+
   const openSearchResult = (kind: string, workspaceId?: string): void => {
     if (workspaceId) setSelectedWorkspaceId(workspaceId);
     if (kind === 'collection' || kind === 'tab') setView('sessions');
@@ -254,7 +275,11 @@ export function App() {
               class={item.id === selectedWorkspaceId ? 'workspace active' : 'workspace'}
               onDragStart={() => setDragged({ kind: 'workspace', id: item.id })}
               onDragOver={(event) => event.preventDefault()}
-              onDrop={() => void handleDrop('workspace', item.id)}
+              onDrop={() =>
+                void (dragged?.kind === 'collection'
+                  ? moveCollectionToWorkspace(item.id)
+                  : handleDrop('workspace', item.id))
+              }
               onClick={() => {
                 setSelectedWorkspaceId(item.id);
                 setView('overview');
@@ -328,6 +353,12 @@ export function App() {
               onView={setView}
               onRestore={restoreCollection}
               onEdit={setEditor}
+              onDismissWelcome={() =>
+                void persist({
+                  ...library,
+                  settings: { ...library.settings, showWelcomeBanner: false },
+                })
+              }
             />
           )}
           {view === 'sessions' && (
@@ -340,6 +371,12 @@ export function App() {
               onCapture={captureWindow}
               onDrag={setDragged}
               onDrop={handleDrop}
+              onLayoutChange={(sessionLayout) =>
+                void persist({
+                  ...library,
+                  settings: { ...library.settings, sessionLayout },
+                })
+              }
             />
           )}
           {view === 'links' && (
@@ -446,12 +483,14 @@ function Overview({
   onView,
   onRestore,
   onEdit,
+  onDismissWelcome,
 }: {
   library: LibraryState;
   workspaceId: string;
   onView: (view: View) => void;
   onRestore: (item: Collection) => Promise<void>;
   onEdit: (target: EditorTarget) => void;
+  onDismissWelcome: () => void;
 }) {
   const workspace = library.workspaces.find((item) => item.id === workspaceId);
   const collections = active(
@@ -467,25 +506,34 @@ function Overview({
           Edit workspace
         </button>
       </PageHeading>
-      <section class="hero-card">
-        <div>
-          <span class="hero-kicker">Your browser, organized</span>
-          <h2>Pick up where you left off.</h2>
-          <p>
-            Sessions, research links, and connected notes stay private and ready whenever you need
-            them.
-          </p>
-          <button class="button light" onClick={() => onView('sessions')}>
-            Browse saved sessions →
+      {library.settings.showWelcomeBanner && (
+        <section class="hero-card">
+          <button
+            class="hero-dismiss"
+            onClick={onDismissWelcome}
+            aria-label="Hide this welcome message"
+          >
+            Close
           </button>
-        </div>
-        <div class="orbit" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <strong>T</strong>
-        </div>
-      </section>
+          <div>
+            <span class="hero-kicker">Your browser, organized</span>
+            <h2>Pick up where you left off.</h2>
+            <p>
+              Sessions, research links, and connected notes stay private and ready whenever you need
+              them.
+            </p>
+            <button class="button light" onClick={() => onView('sessions')}>
+              Browse saved sessions →
+            </button>
+          </div>
+          <div class="orbit" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <strong>T</strong>
+          </div>
+        </section>
+      )}
       <section class="stats-grid">
         <button onClick={() => onView('sessions')}>
           <span>▣</span>
@@ -567,6 +615,7 @@ function SessionCard({
   draggable,
   onDragStart,
   onDrop,
+  list = false,
 }: {
   item: Collection;
   onRestore: (item: Collection) => Promise<void>;
@@ -575,10 +624,11 @@ function SessionCard({
   draggable?: boolean;
   onDragStart?: () => void;
   onDrop?: () => void;
+  list?: boolean;
 }) {
   return (
     <article
-      class="session-card"
+      class={list ? 'session-card session-list-row' : 'session-card'}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragOver={(event) => event.preventDefault()}
@@ -643,6 +693,7 @@ function Sessions({
   onCapture,
   onDrag,
   onDrop,
+  onLayoutChange,
 }: {
   library: LibraryState;
   workspaceId: string;
@@ -652,6 +703,7 @@ function Sessions({
   onCapture: () => Promise<void>;
   onDrag: (value: { kind: 'collection'; id: string }) => void;
   onDrop: (kind: 'collection', id: string) => Promise<void>;
+  onLayoutChange: (layout: Settings['sessionLayout']) => void;
 }) {
   const folders = active(library.folders.filter((item) => item.workspaceId === workspaceId));
   const collections = active(
@@ -660,6 +712,20 @@ function Sessions({
   return (
     <>
       <PageHeading eyebrow="Saved browser state" title="Sessions">
+        <div class="view-toggle" aria-label="Session layout">
+          <button
+            class={library.settings.sessionLayout === 'cards' ? 'active' : ''}
+            onClick={() => onLayoutChange('cards')}
+          >
+            Cards
+          </button>
+          <button
+            class={library.settings.sessionLayout === 'list' ? 'active' : ''}
+            onClick={() => onLayoutChange('list')}
+          >
+            List
+          </button>
+        </div>
         <button class="button ghost" onClick={() => onEdit({ kind: 'folder' })}>
           New folder
         </button>
@@ -686,7 +752,7 @@ function Sessions({
           copy="Capture the current window or create an empty session."
         />
       ) : (
-        <div class="card-grid">
+        <div class={library.settings.sessionLayout === 'list' ? 'session-list' : 'card-grid'}>
           {collections.map((item) => (
             <SessionCard
               item={item}
@@ -696,6 +762,7 @@ function Sessions({
               draggable
               onDragStart={() => onDrag({ kind: 'collection', id: item.id })}
               onDrop={() => void onDrop('collection', item.id)}
+              list={library.settings.sessionLayout === 'list'}
             />
           ))}
         </div>
@@ -946,8 +1013,53 @@ function SettingsView({
   onExport: () => void;
   onImport: () => void;
 }) {
+  const [syncConfig, setSyncConfig] = useState<CloudSyncPublicConfig | null>(null);
+  const [syncUrl, setSyncUrl] = useState('');
+  const [syncUsername, setSyncUsername] = useState('');
+  const [syncPassword, setSyncPassword] = useState('');
+  const [syncStatus, setSyncStatus] = useState('');
   const update = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     onChange({ ...settings, [key]: value });
+
+  useEffect(() => {
+    void send({ type: 'get-cloud-sync-config' }).then((response) => {
+      if (!response.ok || !response.syncConfig) return;
+      setSyncConfig(response.syncConfig);
+      setSyncUrl(response.syncConfig.url);
+      setSyncUsername(response.syncConfig.username);
+    });
+  }, []);
+
+  const saveSync = async (enabled: boolean): Promise<void> => {
+    try {
+      const url = new URL(syncUrl);
+      if (url.protocol !== 'https:') throw new Error('Use an HTTPS WebDAV URL.');
+      const granted = await browser.permissions.request({ origins: [`${url.origin}/*`] });
+      if (!granted) throw new Error('Tabitha needs permission to reach that WebDAV server.');
+      const response = await send({
+        type: 'save-cloud-sync-config',
+        config: {
+          enabled,
+          url: syncUrl,
+          username: syncUsername,
+          ...(syncPassword ? { password: syncPassword } : {}),
+        },
+      });
+      if (!response.ok) throw new Error(response.error);
+      setSyncConfig(response.syncConfig ?? null);
+      setSyncPassword('');
+      setSyncStatus(enabled ? 'Automatic sync enabled.' : 'Cloud settings saved.');
+    } catch (error) {
+      setSyncStatus(error instanceof Error ? error.message : 'Cloud settings could not be saved.');
+    }
+  };
+
+  const runSync = async (direction: 'auto' | 'upload' | 'download'): Promise<void> => {
+    const response = await send({ type: 'sync-cloud', direction });
+    setSyncStatus(response.ok ? (response.message ?? 'Sync complete.') : response.error);
+    const refreshed = await send({ type: 'get-cloud-sync-config' });
+    if (refreshed.ok && refreshed.syncConfig) setSyncConfig(refreshed.syncConfig);
+  };
   return (
     <>
       <PageHeading eyebrow="Preferences and privacy" title="Settings" />
@@ -1005,6 +1117,16 @@ function SettingsView({
             checked={settings.restoreInNewWindow}
             onChange={(value) => update('restoreInNewWindow', value)}
           />
+          <Toggle
+            label="Open dashboard when a new tab is created"
+            checked={settings.openDashboardOnNewTab}
+            onChange={(value) => update('openDashboardOnNewTab', value)}
+          />
+          {!settings.showWelcomeBanner && (
+            <button class="text-button" onClick={() => update('showWelcomeBanner', true)}>
+              Show the welcome banner again
+            </button>
+          )}
         </section>
         <section class="settings-card">
           <h2>Recovery snapshots</h2>
@@ -1043,6 +1165,71 @@ function SettingsView({
           <small>No library data is transmitted by these actions.</small>
         </section>
         <section class="settings-card wide">
+          <h2>Cross-browser cloud sync</h2>
+          <p>
+            Use an HTTPS WebDAV file to keep the newest library available across browsers and
+            devices. Automatic sync checks every five minutes while the browser is running.
+          </p>
+          <div class="sync-fields">
+            <label>
+              WebDAV file URL
+              <input
+                type="url"
+                value={syncUrl}
+                onInput={(event) => setSyncUrl(event.currentTarget.value)}
+                placeholder="https://cloud.example.com/remote.php/dav/files/name/tabitha.json"
+              />
+            </label>
+            <label>
+              Username
+              <input
+                value={syncUsername}
+                onInput={(event) => setSyncUsername(event.currentTarget.value)}
+                autocomplete="username"
+              />
+            </label>
+            <label>
+              App password
+              <input
+                type="password"
+                value={syncPassword}
+                onInput={(event) => setSyncPassword(event.currentTarget.value)}
+                placeholder={syncConfig?.hasPassword ? 'Saved; leave blank to keep it' : ''}
+                autocomplete="current-password"
+              />
+            </label>
+          </div>
+          <div class="button-row">
+            <button class="button primary" onClick={() => void saveSync(true)}>
+              Save and enable
+            </button>
+            <button class="button ghost" onClick={() => void saveSync(false)}>
+              Save without auto-sync
+            </button>
+            <button class="button ghost" onClick={() => void runSync('upload')}>
+              Upload now
+            </button>
+            <button
+              class="button ghost"
+              onClick={() =>
+                confirm('Replace this browser library with the WebDAV backup?') &&
+                void runSync('download')
+              }
+            >
+              Download now
+            </button>
+          </div>
+          <small>
+            Credentials stay in this browser and are excluded from exports and cloud backups.
+            {syncConfig?.lastSyncedAt ? ` Last synced ${timeLabel(syncConfig.lastSyncedAt)}.` : ''}
+          </small>
+          {(syncStatus || syncConfig?.lastError) && (
+            <p class="sync-status" role="status">
+              {syncStatus || syncConfig?.lastError}
+            </p>
+          )}
+        </section>
+        <section class="settings-card wide">
           <h2>Privacy</h2>
           <div class="privacy-banner">
             <span>✓</span>
@@ -1051,7 +1238,7 @@ function SettingsView({
               <p>
                 Tabitha Workspaces has no analytics, account, server, advertising, or remote code.
                 Your tabs, links, and notes remain in browser extension storage unless you
-                explicitly export them.
+                explicitly export them or enable WebDAV sync to a server you choose.
               </p>
             </div>
           </div>
@@ -1125,6 +1312,11 @@ function EditorDialog({
       ? String((typedExisting as Collection | SavedLink | Note).folderId ?? '')
       : '',
   );
+  const [editorWorkspaceId, setEditorWorkspaceId] = useState(
+    'workspaceId' in (typedExisting ?? {})
+      ? String((typedExisting as Folder | Collection | SavedLink | Note).workspaceId)
+      : workspaceId,
+  );
   const [color, setColor] = useState(
     target.kind === 'workspace' && typedExisting
       ? (typedExisting as Workspace).color
@@ -1133,7 +1325,7 @@ function EditorDialog({
   const [collectionTabs, setCollectionTabs] = useState(
     target.kind === 'collection' && typedExisting ? (typedExisting as Collection).tabs : [],
   );
-  const folders = active(library.folders.filter((item) => item.workspaceId === workspaceId));
+  const folders = active(library.folders.filter((item) => item.workspaceId === editorWorkspaceId));
 
   const submit = async (event: SubmitEvent): Promise<void> => {
     event.preventDefault();
@@ -1160,7 +1352,7 @@ function EditorDialog({
     else if (target.kind === 'collection')
       entity = {
         ...common,
-        workspaceId,
+        workspaceId: editorWorkspaceId,
         ...(folderId ? { folderId } : {}),
         description,
         tags: normalizeTags(tags),
@@ -1173,7 +1365,7 @@ function EditorDialog({
     else if (target.kind === 'link')
       entity = {
         ...common,
-        workspaceId,
+        workspaceId: editorWorkspaceId,
         ...(folderId ? { folderId } : {}),
         url,
         description,
@@ -1182,7 +1374,7 @@ function EditorDialog({
     else
       entity = {
         ...common,
-        workspaceId,
+        workspaceId: editorWorkspaceId,
         ...(folderId ? { folderId } : {}),
         body,
         tags: normalizeTags(tags),
@@ -1300,6 +1492,20 @@ function EditorDialog({
         )}
         {(target.kind === 'collection' || target.kind === 'link' || target.kind === 'note') && (
           <>
+            <label>
+              Workspace
+              <select
+                value={editorWorkspaceId}
+                onChange={(event) => {
+                  setEditorWorkspaceId(event.currentTarget.value);
+                  setFolderId('');
+                }}
+              >
+                {active(library.workspaces).map((item) => (
+                  <option value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
             <label>
               Folder
               <select value={folderId} onChange={(event) => setFolderId(event.currentTarget.value)}>
