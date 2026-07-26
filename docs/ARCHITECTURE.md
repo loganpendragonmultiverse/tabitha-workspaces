@@ -7,7 +7,9 @@
 - `entrypoints/dashboard/` provides the complete management interface.
 - `entrypoints/popup/` provides fast capture, save-link, recent-session, and dashboard actions.
 - `src/domain/` contains browser-independent models and operations.
-- `src/storage/` owns the single versioned `browser.storage.local` record.
+- `src/storage/` owns the versioned local library record and the separate optional WebDAV
+  configuration record.
+- `src/sync/` implements explicit, opt-in WebDAV backup synchronization.
 
 ## Data hierarchy
 
@@ -33,8 +35,10 @@ plan. WXT generates a Chromium service worker and Firefox background script from
 
 ## Security boundary
 
-- No content scripts or host permissions.
+- No content scripts or required host permissions. WebDAV users grant an optional HTTPS origin at
+  configuration time.
 - No HTML rendering of note content; notes remain plain text.
-- No remote code, CDN resources, analytics, or network requests.
+- No remote code, CDN resources, or analytics. Network requests occur only when a user configures
+  WebDAV synchronization and go only to the granted origin.
 - Import accepts only the versioned JSON envelope and replaces data only after explicit confirmation.
 - Store packages contain generated application code only; development dependencies are not bundled.

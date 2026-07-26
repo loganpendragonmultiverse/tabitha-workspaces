@@ -367,6 +367,7 @@ main {
   border: 1px solid #ffd9de;
 }
 .hero-card {
+  position: relative;
   min-height: 245px;
   padding: 37px 42px;
   border-radius: 22px;
@@ -377,6 +378,19 @@ main {
   background: linear-gradient(125deg, #363861, #565aa1 65%, #745ab1);
   color: #fff;
   box-shadow: var(--shadow);
+}
+.hero-dismiss {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 3;
+  padding: 7px 10px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
 }
 .hero-kicker {
   display: block;
@@ -517,6 +531,56 @@ main {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+}
+.view-toggle {
+  display: flex;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.view-toggle button {
+  padding: 6px 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.view-toggle button.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.session-list {
+  display: grid;
+  gap: 8px;
+}
+.session-list-row {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 120px 115px minmax(0, 1fr) auto;
+  gap: 15px;
+  align-items: center;
+}
+.session-list-row .card-top {
+  align-items: center;
+}
+.session-list-row .favicon-stack {
+  margin: 0;
+}
+.session-list-row > p,
+.session-list-row .tags {
+  display: none;
+}
+.session-list-row h3 {
+  margin: 0;
+}
+.session-list-row footer {
+  margin: 0;
+  padding: 0;
+  gap: 18px;
+  border: 0;
 }
 .session-card,
 .note-card {
@@ -937,6 +1001,32 @@ main {
 .settings-card > small {
   color: var(--muted);
 }
+.sync-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(150px, 1fr) minmax(150px, 1fr);
+  gap: 10px;
+}
+.sync-fields label {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sync-fields input {
+  width: 100%;
+  padding: 9px 10px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.sync-status {
+  margin: 12px 0 0 !important;
+  padding: 9px;
+  color: var(--text) !important;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
 .modal-backdrop {
   position: fixed;
   z-index: 50;
@@ -1054,6 +1144,15 @@ main {
   }
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .session-list-row {
+    grid-template-columns: 105px minmax(0, 1fr) auto;
+  }
+  .session-list-row .favicon-stack {
+    display: none;
+  }
+  .sync-fields {
+    grid-template-columns: 1fr;
   }
 }
 .tab-editor {

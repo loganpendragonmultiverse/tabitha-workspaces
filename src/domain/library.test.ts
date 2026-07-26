@@ -16,7 +16,7 @@ import {
   restoreTrashed,
   searchLibrary,
 } from './library';
-import type { Collection, LibraryState, Note, SavedLink } from './types';
+import type { Collection, LibraryState, Note, SavedLink, Settings } from './types';
 
 const fixture = (): LibraryState => {
   const state = createDefaultState();
@@ -234,13 +234,20 @@ describe('versioned backups', () => {
 
   it('normalizes optional arrays and settings', () => {
     const state = fixture();
+    const legacySettings = { ...state.settings } as Partial<Settings>;
+    delete legacySettings.sessionLayout;
+    delete legacySettings.showWelcomeBanner;
+    delete legacySettings.openDashboardOnNewTab;
     const normalized = normalizeLibrary({
       ...state,
       revision: Number.NaN,
-      settings: { ...state.settings, accent: '#fff' },
+      settings: { ...legacySettings, accent: '#fff' } as Settings,
     });
     expect(normalized.revision).toBe(0);
     expect(normalized.settings.accent).toBe('#fff');
+    expect(normalized.settings.sessionLayout).toBe('cards');
+    expect(normalized.settings.showWelcomeBanner).toBe(true);
+    expect(normalized.settings.openDashboardOnNewTab).toBe(false);
   });
 
   it('rejects unsupported and empty libraries', () => {

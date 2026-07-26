@@ -56,6 +56,7 @@ export interface Note extends BaseEntity {
 
 export type Theme = 'system' | 'light' | 'dark';
 export type Density = 'comfortable' | 'compact';
+export type SessionLayout = 'cards' | 'list';
 
 export interface Settings {
   theme: Theme;
@@ -66,6 +67,9 @@ export interface Settings {
   restoreInNewWindow: boolean;
   automaticSnapshots: boolean;
   snapshotIntervalMinutes: number;
+  sessionLayout: SessionLayout;
+  showWelcomeBanner: boolean;
+  openDashboardOnNewTab: boolean;
 }
 
 export interface LibraryState {

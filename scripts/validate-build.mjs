@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
 
+const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
+
 const targets = [
   { directory: '.output/chrome-mv3', browser: 'chrome' },
   { directory: '.output/firefox-mv3', browser: 'firefox' },
@@ -7,11 +9,16 @@ const targets = [
 
 for (const target of targets) {
   const manifest = JSON.parse(await readFile(`${target.directory}/manifest.json`, 'utf8'));
-  if (manifest.manifest_version !== 3 || manifest.version !== '1.0.0') {
-    throw new Error(`${target.browser}: expected Manifest V3 version 1.0.0`);
+  if (manifest.manifest_version !== 3 || manifest.version !== packageJson.version) {
+    throw new Error(`${target.browser}: expected Manifest V3 version ${packageJson.version}`);
   }
   if (manifest.host_permissions?.length) {
     throw new Error(`${target.browser}: host permissions are not allowed`);
+  }
+  if (
+    JSON.stringify(manifest.optional_host_permissions ?? []) !== JSON.stringify(['https://*/*'])
+  ) {
+    throw new Error(`${target.browser}: expected only the optional HTTPS WebDAV permission`);
   }
   for (const permission of manifest.permissions ?? []) {
     if (!['storage', 'tabs', 'contextMenus', 'unlimitedStorage', 'alarms'].includes(permission)) {

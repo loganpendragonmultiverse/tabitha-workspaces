@@ -3,7 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { browser } from 'wxt/browser';
 import type { BackgroundRequest, BackgroundResponse } from '../../src/browser/messages';
 import type { Collection, LibraryState } from '../../src/domain/types';
-import { getLibrary } from '../../src/storage/libraryStore';
+import { getLibrary, updateLibrary } from '../../src/storage/libraryStore';
 import './styles.css';
 
 const send = (request: BackgroundRequest): Promise<BackgroundResponse> =>
@@ -12,6 +12,8 @@ const send = (request: BackgroundRequest): Promise<BackgroundResponse> =>
 function Popup() {
   const [library, setLibrary] = useState<LibraryState | null>(null);
   const [message, setMessage] = useState('');
+  const [renamingId, setRenamingId] = useState('');
+  const [renameValue, setRenameValue] = useState('');
   useEffect(() => {
     void getLibrary().then(setLibrary);
   }, []);
@@ -29,6 +31,20 @@ function Popup() {
   };
   const restore = (item: Collection) =>
     run({ type: 'restore-collection', collectionId: item.id }, 'Restored.');
+
+  const saveRename = async (item: Collection): Promise<void> => {
+    const name = renameValue.trim();
+    if (!name) return;
+    const next = await updateLibrary((state) => ({
+      ...state,
+      collections: state.collections.map((collection) =>
+        collection.id === item.id ? { ...collection, name, updatedAt: Date.now() } : collection,
+      ),
+    }));
+    setLibrary(next);
+    setRenamingId('');
+    setMessage('Session renamed.');
+  };
 
   return (
     <main>
@@ -77,14 +93,49 @@ function Popup() {
           <p>No saved sessions yet.</p>
         ) : (
           recent.map((item) => (
-            <button onClick={() => void restore(item)}>
-              <span>{item.name.slice(0, 1).toUpperCase()}</span>
-              <div>
-                <strong>{item.name}</strong>
-                <small>{item.tabs.length} tabs</small>
-              </div>
-              <i>↗</i>
-            </button>
+            <div class="recent-item">
+              {renamingId === item.id ? (
+                <form
+                  class="rename-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void saveRename(item);
+                  }}
+                >
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onInput={(event) => setRenameValue(event.currentTarget.value)}
+                    aria-label={`Rename ${item.name}`}
+                  />
+                  <button type="submit">Save</button>
+                  <button type="button" onClick={() => setRenamingId('')}>
+                    Cancel
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <button class="recent-open" onClick={() => void restore(item)}>
+                    <span>{item.name.slice(0, 1).toUpperCase()}</span>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <small>{item.tabs.length} tabs</small>
+                    </div>
+                    <i>↗</i>
+                  </button>
+                  <button
+                    class="recent-rename"
+                    onClick={() => {
+                      setRenamingId(item.id);
+                      setRenameValue(item.name);
+                    }}
+                    aria-label={`Rename ${item.name}`}
+                  >
+                    Rename
+                  </button>
+                </>
+              )}
+            </div>
           ))
         )}
       </section>
