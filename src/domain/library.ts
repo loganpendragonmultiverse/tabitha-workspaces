@@ -8,6 +8,7 @@ import type {
   LibraryState,
   RestorePlan,
   SavedTab,
+  SearchScope,
   SearchResult,
 } from './types';
 
@@ -108,11 +109,18 @@ const scoreText = (query: string, name: string, detail: string): number => {
   return 0;
 };
 
-export const searchLibrary = (state: LibraryState, input: string): SearchResult[] => {
+export const searchLibrary = (
+  state: LibraryState,
+  input: string,
+  scope: SearchScope = 'all',
+): SearchResult[] => {
   const query = input.trim().toLowerCase();
   if (!query) return [];
   const results: SearchResult[] = [];
   const add = (result: Omit<SearchResult, 'score'>): void => {
+    if (scope === 'workspace' && result.kind !== 'workspace') return;
+    if (scope === 'collection' && result.kind !== 'collection') return;
+    if (scope === 'url' && result.kind !== 'tab' && result.kind !== 'link') return;
     const score = scoreText(query, result.name, result.detail);
     if (score > 0) results.push({ ...result, score });
   };
@@ -252,7 +260,17 @@ export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
     collections: Array.isArray(candidate.collections) ? candidate.collections : [],
     links: Array.isArray(candidate.links) ? candidate.links : [],
     notes: Array.isArray(candidate.notes) ? candidate.notes : [],
-    settings: { ...defaultSettings(), ...candidate.settings },
+    settings: {
+      ...defaultSettings(),
+      ...candidate.settings,
+      collapsedCollectionIds: Array.isArray(candidate.settings?.collapsedCollectionIds)
+        ? [
+            ...new Set(
+              candidate.settings.collapsedCollectionIds.filter((id) => typeof id === 'string'),
+            ),
+          ]
+        : [],
+    },
   };
 };
 

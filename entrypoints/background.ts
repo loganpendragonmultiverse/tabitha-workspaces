@@ -178,7 +178,13 @@ const syncCloud = async (direction: SyncDirection): Promise<string> => {
   try {
     const result = await synchronizeWebDav(config, await getStoredLibrary(), direction);
     if (result.action === 'downloaded') await replaceStoredLibrary(result.library);
-    await setCloudSyncConfig({ ...config, lastSyncedAt: Date.now(), lastError: null });
+    await setCloudSyncConfig({
+      ...config,
+      lastSyncedAt: Date.now(),
+      lastSyncedFingerprint: result.fingerprint,
+      ...(result.etag ? { lastRemoteEtag: result.etag } : {}),
+      lastError: null,
+    });
     if (result.action === 'uploaded') return 'Cloud backup updated.';
     if (result.action === 'downloaded') return 'Cloud backup restored.';
     return 'Cloud backup is already up to date.';

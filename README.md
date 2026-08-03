@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.4.5 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.4.5/tabitha-workspaces-1.4.5-chrome.zip)
-- [Download Tabitha Workspaces 1.4.5 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.4.5/tabitha-workspaces-1.4.5-firefox.zip)
+- [Download Tabitha Workspaces 1.5.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.5.0/tabitha-workspaces-1.5.0-chrome.zip)
+- [Download Tabitha Workspaces 1.5.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.5.0/tabitha-workspaces-1.5.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -25,18 +25,23 @@ After downloading, follow the short browser-specific steps in
 - Shows open tabs across browser windows and refreshes the view automatically.
 - Saves individual links with descriptions and tags.
 - Stores notes with `[[internal links]]` and backlink counts.
-- Searches workspace names, folders, sessions, saved tabs, URLs, notes, and tags.
+- Searches workspace names, folders, sessions, saved tabs, URLs, notes, and tags, with direct
+  Workspaces, Collections, and URLs filters.
 - Soft-deletes workspaces, folders, sessions, links, and notes into a recycle bin.
 - Reorders workspaces and sessions with drag and drop.
 - Moves sessions between workspaces by dragging them onto the workspace sidebar or editing them.
 - Switches saved collections between card, compact, and editable tab-row layouts.
-- Expands or collapses individual collections by clicking their headings, with expand-all and collapse-all controls.
+- Expands or collapses individual collections by clicking their headings, with persistent
+  expand-all and collapse-all controls.
 - Migrates existing version 1 libraries into a default top-level folder without losing workspaces or saved content.
 - Renames recent sessions directly from the toolbar popup.
 - Optionally opens the dashboard when a new browser tab is created.
 - Creates optional replacement-style recovery snapshots on a user-selected interval.
-- Imports and exports a complete, versioned JSON backup.
-- Optionally synchronizes the newest library through a user-provided HTTPS WebDAV file.
+- Imports and exports a complete, versioned JSON backup or one independently restorable JSON file
+  per folder. Protected folder files retain their encrypted vault.
+- Optionally synchronizes through a user-provided HTTPS WebDAV file with three-way conflict
+  detection and conditional writes that prevent stale browsers from silently overwriting newer
+  remote data.
 - Provides system, light, and dark themes, compact density, and a custom accent color.
 - Adds toolbar actions, page context menus, and keyboard shortcuts.
 
@@ -100,8 +105,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.4.5-chrome.zip`
-- `.output/tabitha-workspaces-1.4.5-firefox.zip`
+- `.output/tabitha-workspaces-1.5.0-chrome.zip`
+- `.output/tabitha-workspaces-1.5.0-firefox.zip`
 
 ## Architecture
 
@@ -112,9 +117,12 @@ and data boundaries are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.m
 
 ## Limitations
 
-- Cross-browser synchronization uses a user-provided WebDAV file. Its automatic mode is
-  last-write-wins using the library update time; use the manual upload/download controls before
-  making simultaneous changes on multiple devices.
+- Cross-browser synchronization uses a user-provided WebDAV file. When both local and remote copies
+  changed since their last common version, Tabitha stops with a conflict instead of combining them.
+  Export folder backups before manually choosing which copy to keep.
+- Safe replacement uploads require the WebDAV server to return an `ETag` or `Last-Modified`
+  validator. Creating a new remote file uses `If-None-Match` to avoid overwriting a file that
+  appeared during the request.
 - Protected-folder passwords cannot be recovered. Unlocking is session-scoped, and importing an
   encrypted backup still requires the original password.
 - Browser-internal pages such as `chrome://settings` and `about:config` cannot be restored by an

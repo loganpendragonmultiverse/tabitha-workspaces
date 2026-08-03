@@ -11,7 +11,7 @@ official continuation endorsed by the original author.
 - Capture and restore browser windows with duplicate-safe restoration.
 - Live-tab view, opt-in automatic recovery snapshots, context menus, and shortcuts.
 - Search across saved content and `[[internal note links]]` with backlinks.
-- Versioned JSON import/export and full-library backup.
+- Versioned JSON import/export with full-library and independently restorable per-folder backups.
 - Themes, density, accent color, and restore preferences.
 - Separate, verified Manifest V3 packages for Chromium and Firefox.
 - No analytics, advertising, accounts, remote code, or transmission of browsing data.
@@ -28,6 +28,15 @@ provider can be added later without changing the library schema.
 Run `npm run validate`. Both browser manifests must contain only the permissions documented in
 the README, both distributable ZIP files must be generated, and the full test suite must pass.
 Store submission is a separate step because it requires developer accounts and store review.
+
+## Version 1.5 feedback release
+
+Version 1.5 is a bounded reliability and large-library release. Folder exports are independent
+versioned envelopes; a protected folder carries its existing encrypted vault without plaintext
+workspaces or content. WebDAV synchronization compares both copies to their last common
+fingerprint and uses remote validators for replacement uploads. Divergent edits become an explicit
+conflict rather than a timestamp guess. Search can be scoped to workspaces, collections, or URLs,
+and collection collapse state persists for libraries with hundreds of collections.
 
 ## Version 1.3 feedback release
 

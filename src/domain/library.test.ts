@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultState } from './defaults';
-import { parseLibraryExport, serializeLibrary } from './importExport';
+import {
+  exportFolder,
+  mergeFolderExport,
+  parseFolderExport,
+  parseLibraryExport,
+  serializeFolder,
+  serializeLibrary,
+} from './importExport';
 import {
   captureTabs,
   createCollectionFromTabs,
@@ -163,6 +170,12 @@ describe('search and linked notes', () => {
     expect(searchLibrary(state, 'research session')[0]?.score).toBe(100);
     expect(searchLibrary(state, 'research')[0]?.score).toBe(80);
     expect(searchLibrary(state, '   ')).toEqual([]);
+    expect(searchLibrary(state, 'research', 'workspace')).toEqual([]);
+    expect(searchLibrary(state, 'research', 'collection')).toHaveLength(1);
+    expect(searchLibrary(state, 'mozilla', 'url').map((result) => result.kind)).toEqual([
+      'tab',
+      'link',
+    ]);
   });
 
   it('extracts unique wiki links and finds backlinks', () => {
@@ -242,6 +255,52 @@ describe('versioned backups', () => {
     expect(parseLibraryExport(serializeLibrary(state))).toEqual(state);
   });
 
+  it('exports and restores one unprotected folder independently', () => {
+    const state = fixture();
+    const folderId = state.folders[0]!.id;
+    const backup = parseFolderExport(serializeFolder(state, folderId));
+    expect(backup.format).toBe('tabitha-workspaces-folder');
+    expect(backup.workspaces).toHaveLength(1);
+    expect(backup.collections).toHaveLength(1);
+
+    const replacement = {
+      ...backup,
+      folder: { ...backup.folder, name: 'Restored research' },
+    };
+    const merged = mergeFolderExport(state, replacement);
+    expect(merged.folders.find((item) => item.id === folderId)?.name).toBe('Restored research');
+    expect(merged.collections).toHaveLength(1);
+  });
+
+  it('keeps protected folder backups encrypted and rejects plaintext alongside a vault', () => {
+    const state = fixture();
+    const folderId = state.folders[0]!.id;
+    const protectedState = {
+      ...state,
+      folders: state.folders.map((folder) => ({
+        ...folder,
+        protection: {
+          version: 1 as const,
+          algorithm: 'AES-256-GCM' as const,
+          kdf: 'PBKDF2-SHA-256' as const,
+          iterations: 310_000,
+          salt: 'salt',
+          vault: { iv: 'iv', ciphertext: 'ciphertext' },
+        },
+      })),
+      workspaces: [],
+      collections: [],
+      links: [],
+      notes: [],
+    };
+    const backup = exportFolder(protectedState, folderId);
+    expect(backup.folder.protection?.vault.ciphertext).toBe('ciphertext');
+    expect(backup.workspaces).toEqual([]);
+    expect(() =>
+      parseFolderExport(JSON.stringify({ ...backup, workspaces: state.workspaces })),
+    ).toThrow('plaintext');
+  });
+
   it('rejects invalid JSON and unrelated formats', () => {
     expect(() => parseLibraryExport('{')).toThrow('not valid JSON');
     expect(() => parseLibraryExport('{}')).toThrow('not a supported Tabitha Workspaces');
@@ -263,6 +322,7 @@ describe('versioned backups', () => {
     expect(normalized.settings.sessionLayout).toBe('cards');
     expect(normalized.settings.showWelcomeBanner).toBe(true);
     expect(normalized.settings.openDashboardOnNewTab).toBe(false);
+    expect(normalized.settings.collapsedCollectionIds).toEqual([]);
   });
 
   it('rejects unsupported and empty libraries', () => {

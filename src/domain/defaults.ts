@@ -12,6 +12,7 @@ export const defaultSettings = (): Settings => ({
   automaticSnapshots: false,
   snapshotIntervalMinutes: 15,
   sessionLayout: 'cards',
+  collapsedCollectionIds: [],
   showWelcomeBanner: true,
   openDashboardOnNewTab: false,
 });

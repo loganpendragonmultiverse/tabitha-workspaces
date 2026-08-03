@@ -2,6 +2,15 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.5.0 - 2026-08-03
+
+- Added one independently restorable JSON backup per folder while retaining the full-library export.
+- Kept password-protected folder contents encrypted inside their individual backup files.
+- Replaced timestamp-only WebDAV selection with last-common-version conflict detection and
+  conditional writes using `ETag`, `Last-Modified`, and `If-None-Match` safeguards.
+- Added direct Workspaces, Collections, and URLs search filters with up to 50 ranked results.
+- Persisted individual, expand-all, and collapse-all collection state across dashboard sessions.
+
 ## 1.4.5 - 2026-08-03
 
 - Displayed the installed version number persistently in the dashboard sidebar.
