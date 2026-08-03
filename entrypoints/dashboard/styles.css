@@ -254,6 +254,12 @@ body {
   color: var(--muted);
   font-size: 10px;
 }
+.privacy-note em {
+  float: right;
+  color: var(--muted);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
 .privacy-note span {
   color: #31b778;
   margin-right: 6px;

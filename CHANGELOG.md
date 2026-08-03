@@ -2,6 +2,12 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.4.5 - 2026-08-03
+
+- Displayed the installed version number persistently in the dashboard sidebar.
+- Added a clearly labeled Delete action beside every folder, with confirmation and recycle-bin behavior.
+- Kept Cards, Compact, and List as visible one-click session layout controls with no submenu.
+
 ## 1.4.0 - 2026-08-03
 
 - Added optional password protection for top-level folders using PBKDF2-SHA-256 and authenticated AES-256-GCM encryption.
