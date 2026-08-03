@@ -2,6 +2,13 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.3.0 - 2026-08-03
+
+- Reframed folders as isolated top-level containers that hold workspaces, matching the intended personal/work/family separation model.
+- Added automatic schema migration that places existing libraries into a default Personal folder without losing saved content.
+- Rebuilt session list view around one editable row per saved tab, including favicon, title, URL, and a direct delete control.
+- Added focused domain coverage for saved-tab row editing/removal and version 1-to-2 library migration.
+
 ## 1.2.0 - 2026-08-03
 
 - Added clear folder guidance and folder-based filtering for saved collections inside a workspace.

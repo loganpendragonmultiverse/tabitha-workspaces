@@ -12,10 +12,10 @@ export interface BaseEntity {
 export interface Workspace extends BaseEntity {
   color: string;
   description: string;
+  folderId: string;
 }
 
 export interface Folder extends BaseEntity {
-  workspaceId: string;
   description: string;
 }
 
@@ -73,7 +73,7 @@ export interface Settings {
 }
 
 export interface LibraryState {
-  schemaVersion: 1;
+  schemaVersion: 2;
   revision: number;
   updatedAt: number;
   workspaces: Workspace[];
@@ -87,7 +87,7 @@ export interface LibraryState {
 export interface LibraryExport {
   format: 'tabitha-workspaces';
   exportedAt: string;
-  version: 1;
+  version: 2;
   library: LibraryState;
 }
 

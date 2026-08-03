@@ -29,11 +29,12 @@ Run `npm run validate`. Both browser manifests must contain only the permissions
 the README, both distributable ZIP files must be generated, and the full test suite must pass.
 Store submission is a separate step because it requires developer accounts and store review.
 
-## Version 1.2 feedback release
+## Version 1.3 feedback release
 
-Version 1.2 incorporates direct user feedback without changing the local-first data model. Folders
-are described and behave as filters within one workspace, list rows expose compact identifying
-details, unpacked-installation updates carry an explicit backup warning, collection terminology is
-consistent, and generated module-preload hints are disabled. The existing optional new-tab
-dashboard and collection-description fields remain available. Store packages and reviewer source
-must be built from the same tagged commit.
+Version 1.3 incorporates direct user feedback with a versioned data-model migration. Folders are
+top-level isolated containers and workspaces live inside them; the prior version 1 layout migrates
+into one Personal folder without dropping content. Session list mode exposes every saved tab as an
+editable favicon, title, and URL row with a direct delete action. Optional password protection is
+not included: adding meaningful local isolation requires a separately reviewed encryption and key-
+management design, not a cosmetic UI lock. Store packages and reviewer source must be built from
+the same tagged commit.

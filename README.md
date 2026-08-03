@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.2.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.2.0/tabitha-workspaces-1.2.0-chrome.zip)
-- [Download Tabitha Workspaces 1.2.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.2.0/tabitha-workspaces-1.2.0-firefox.zip)
+- [Download Tabitha Workspaces 1.3.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.3.0/tabitha-workspaces-1.3.0-chrome.zip)
+- [Download Tabitha Workspaces 1.3.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.3.0/tabitha-workspaces-1.3.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -18,7 +18,7 @@ After downloading, follow the short browser-specific steps in
 
 ## What it does
 
-- Organizes separate workspaces with folders and ordered collections.
+- Uses top-level folders as isolated containers for one or more workspaces.
 - Captures the current browser window as a restorable session.
 - Restores sessions into a new or existing window and optionally skips duplicate URLs.
 - Shows open tabs across browser windows and refreshes the view automatically.
@@ -28,9 +28,8 @@ After downloading, follow the short browser-specific steps in
 - Soft-deletes workspaces, folders, sessions, links, and notes into a recycle bin.
 - Reorders workspaces and sessions with drag and drop.
 - Moves sessions between workspaces by dragging them onto the workspace sidebar or editing them.
-- Switches saved sessions between card and compact list layouts with favicon, title, and URL details.
-- Filters saved sessions by folders within the current workspace and explains how folders differ
-  from workspaces.
+- Switches saved sessions between cards and an editable tab-row list with favicon, title, URL, and delete controls.
+- Migrates existing version 1 libraries into a default top-level folder without losing workspaces or saved content.
 - Renames recent sessions directly from the toolbar popup.
 - Optionally opens the dashboard when a new browser tab is created.
 - Creates optional replacement-style recovery snapshots on a user-selected interval.
@@ -97,8 +96,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.2.0-chrome.zip`
-- `.output/tabitha-workspaces-1.2.0-firefox.zip`
+- `.output/tabitha-workspaces-1.3.0-chrome.zip`
+- `.output/tabitha-workspaces-1.3.0-firefox.zip`
 
 ## Architecture
 

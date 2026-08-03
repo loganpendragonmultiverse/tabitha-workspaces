@@ -12,9 +12,11 @@ import {
   normalizeTags,
   noteBacklinks,
   purgeTrash,
+  removeSavedTab,
   reorderEntities,
   restoreTrashed,
   searchLibrary,
+  updateSavedTab,
 } from './library';
 import type { Collection, LibraryState, Note, SavedLink, Settings } from './types';
 
@@ -170,6 +172,19 @@ describe('search and linked notes', () => {
 });
 
 describe('ordering and recycle bin', () => {
+  it('edits and removes saved tab rows without mutating the collection', () => {
+    const collection = fixture().collections[0]!;
+    const tabId = collection.tabs[0]!.id;
+    const edited = updateSavedTab(collection, tabId, {
+      title: 'Edited title',
+      url: 'https://edited.example.test/',
+    });
+    expect(edited.tabs[0]!.title).toBe('Edited title');
+    expect(collection.tabs[0]!.title).not.toBe('Edited title');
+    const removed = removeSavedTab(edited, tabId);
+    expect(removed.tabs).toHaveLength(1);
+    expect(removed.tabs[0]!.order).toBe(0);
+  });
   it('reorders entities without mutating invalid requests', () => {
     const items = fixture().notes;
     expect(reorderEntities(items, 'note-2', 'note-1').map((item) => item.id)).toEqual([
@@ -184,7 +199,6 @@ describe('ordering and recycle bin', () => {
     state.folders = [
       {
         id: 'folder-1',
-        workspaceId: state.workspaces[0]!.id,
         name: 'Folder',
         description: '',
         createdAt: 1,
@@ -192,6 +206,7 @@ describe('ordering and recycle bin', () => {
         order: 0,
       },
     ];
+    state.workspaces[0]!.folderId = 'folder-1';
     const cases = [
       ['workspace', state.workspaces[0]!.id],
       ['folder', 'folder-1'],
@@ -229,7 +244,7 @@ describe('versioned backups', () => {
 
   it('rejects invalid JSON and unrelated formats', () => {
     expect(() => parseLibraryExport('{')).toThrow('not valid JSON');
-    expect(() => parseLibraryExport('{}')).toThrow('not a Tabitha Workspaces');
+    expect(() => parseLibraryExport('{}')).toThrow('not a supported Tabitha Workspaces');
   });
 
   it('normalizes optional arrays and settings', () => {
@@ -253,8 +268,24 @@ describe('versioned backups', () => {
   it('rejects unsupported and empty libraries', () => {
     const state = fixture();
     expect(() =>
-      normalizeLibrary({ ...state, schemaVersion: 2 } as unknown as LibraryState),
+      normalizeLibrary({ ...state, schemaVersion: 3 } as unknown as LibraryState),
     ).toThrow('unsupported');
     expect(() => normalizeLibrary({ ...state, workspaces: [] })).toThrow('at least one workspace');
+  });
+
+  it('migrates version 1 workspaces into a top-level folder', () => {
+    const state = fixture();
+    const legacy = {
+      ...state,
+      schemaVersion: 1,
+      workspaces: state.workspaces.map((workspace) =>
+        Object.fromEntries(Object.entries(workspace).filter(([key]) => key !== 'folderId')),
+      ),
+      folders: [],
+    } as unknown as LibraryState;
+    const migrated = normalizeLibrary(legacy);
+    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.folders).toHaveLength(1);
+    expect(migrated.workspaces[0]!.folderId).toBe(migrated.folders[0]!.id);
   });
 });
