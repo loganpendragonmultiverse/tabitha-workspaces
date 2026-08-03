@@ -4,12 +4,12 @@ GitHub release packages are unsigned development distributions. Browser stores a
 
 Direct downloads:
 
-- [Chrome and Chromium package](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.2.0/tabitha-workspaces-1.2.0-chrome.zip)
-- [Firefox package](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.2.0/tabitha-workspaces-1.2.0-firefox.zip)
+- [Chrome and Chromium package](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.3.0/tabitha-workspaces-1.3.0-chrome.zip)
+- [Firefox package](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.3.0/tabitha-workspaces-1.3.0-firefox.zip)
 
 ## Chromium browsers
 
-1. Download and extract the `tabitha-workspaces-1.2.0-chrome.zip` release asset.
+1. Download and extract the `tabitha-workspaces-1.3.0-chrome.zip` release asset.
 2. Open `chrome://extensions` or the equivalent page in the Chromium-derived browser.
 3. Enable **Developer mode**.
 4. Select **Load unpacked** and choose the extracted directory containing `manifest.json`.
@@ -32,7 +32,7 @@ new installation cannot read local storage owned by the previous ID.
 
 For temporary development installation:
 
-1. Extract `tabitha-workspaces-1.2.0-firefox.zip`.
+1. Extract `tabitha-workspaces-1.3.0-firefox.zip`.
 2. Open `about:debugging#/runtime/this-firefox`.
 3. Select **Load Temporary Add-on**.
 4. Select `manifest.json` in the extracted directory.

@@ -4,7 +4,7 @@ import type { LibraryExport, LibraryState } from './types';
 export const exportLibrary = (library: LibraryState): LibraryExport => ({
   format: 'tabitha-workspaces',
   exportedAt: new Date().toISOString(),
-  version: 1,
+  version: 2,
   library,
 });
 
@@ -20,8 +20,12 @@ export const parseLibraryExport = (input: string): LibraryState => {
   }
   if (!parsed || typeof parsed !== 'object') throw new Error('The backup is empty.');
   const envelope = parsed as Partial<LibraryExport>;
-  if (envelope.format !== 'tabitha-workspaces' || envelope.version !== 1 || !envelope.library) {
-    throw new Error('The selected file is not a Tabitha Workspaces version 1 backup.');
+  if (
+    envelope.format !== 'tabitha-workspaces' ||
+    ![1, 2].includes(Number(envelope.version)) ||
+    !envelope.library
+  ) {
+    throw new Error('The selected file is not a supported Tabitha Workspaces backup.');
   }
   return normalizeLibrary(envelope.library);
 };

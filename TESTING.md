@@ -13,5 +13,5 @@ release ZIP files. The built dashboard HTML must not contain `modulepreload`; th
 cross-world preload warnings reported by Chromium.
 
 Before release, also load both unpacked output directories and verify the dashboard, popup, capture,
-restore, JSON export/import, optional new-tab behavior, folder filtering, compact list layout, and
+restore, JSON export/import, optional new-tab behavior, top-level folder migration, editable tab rows, and
 WebDAV permission prompt. Store review and signing occur separately from the GitHub release.

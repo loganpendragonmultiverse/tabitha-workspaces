@@ -25,7 +25,10 @@ Library
 
 Entity identifiers are random UUIDs. Order is explicit rather than inferred from array position.
 Deletion sets `trashedAt`; permanent deletion also removes descendants of deleted workspaces and
-folders. Backups use a format marker and schema version before accepting replacement data.
+top-level folders. Folders contain workspaces; workspaces contain collections, links, and notes.
+Backups use a format marker and schema version before accepting replacement data. The version 2
+normalizer migrates version 1 libraries into one default folder while preserving existing workspaces
+and saved content.
 
 ## Browser boundary
 

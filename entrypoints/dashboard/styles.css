@@ -164,6 +164,40 @@ body {
   padding: 0;
   font-size: 17px;
 }
+.section-label > div {
+  display: flex;
+  gap: 10px;
+}
+.folder-tree {
+  display: grid;
+  gap: 9px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.folder-node {
+  min-width: 0;
+}
+.folder-name {
+  width: 100%;
+  padding: 5px 9px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  text-align: left;
+}
+.folder-name:hover {
+  color: var(--text);
+}
+.folder-node .workspace-list {
+  margin-left: 12px;
+  padding-left: 7px;
+  border-left: 1px solid var(--border);
+}
 .workspace-list {
   display: grid;
   gap: 2px;
@@ -555,6 +589,85 @@ main {
 .session-list {
   display: grid;
   gap: 8px;
+}
+.session-list-group {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.session-list-group > header {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.session-list-group > header div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.session-list-group > header small {
+  color: var(--muted);
+}
+.session-list-group > header button,
+.tab-delete {
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.session-list-group > header button:hover,
+.tab-delete:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+.session-list-group > header button.danger:hover,
+.tab-delete:hover {
+  color: var(--danger);
+}
+.editable-tab-row {
+  padding: 7px 10px;
+  display: grid;
+  grid-template-columns: 25px minmax(130px, 0.8fr) minmax(220px, 1.2fr) 30px;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.editable-tab-row:last-child {
+  border-bottom: 0;
+}
+.editable-tab-row input {
+  min-width: 0;
+  padding: 6px 8px;
+  border-color: transparent;
+  background: transparent;
+}
+.editable-tab-row input:hover,
+.editable-tab-row input:focus {
+  border-color: var(--border);
+  background: var(--background);
+}
+.tab-favicon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.tab-favicon img {
+  width: 16px;
+  height: 16px;
 }
 .session-list-row {
   min-height: 0;

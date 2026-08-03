@@ -4,6 +4,7 @@ import type {
   Collection,
   EntityKind,
   BaseEntity,
+  Folder,
   LibraryState,
   RestorePlan,
   SavedTab,
@@ -129,7 +130,6 @@ export const searchLibrary = (state: LibraryState, input: string): SearchResult[
         kind: 'folder',
         name: item.name,
         detail: item.description,
-        workspaceId: item.workspaceId,
       }),
     );
   state.collections
@@ -195,18 +195,54 @@ export const reorderEntities = <T extends { id: string; order: number }>(
   return sorted.map((item, order) => ({ ...item, order }));
 };
 
+export const updateSavedTab = (
+  collection: Collection,
+  tabId: string,
+  change: Partial<Pick<SavedTab, 'title' | 'url'>>,
+): Collection => ({
+  ...collection,
+  tabs: collection.tabs.map((tab) => (tab.id === tabId ? { ...tab, ...change } : tab)),
+});
+
+export const removeSavedTab = (collection: Collection, tabId: string): Collection => ({
+  ...collection,
+  tabs: collection.tabs.filter((tab) => tab.id !== tabId).map((tab, order) => ({ ...tab, order })),
+});
+
 export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
-  if (candidate.schemaVersion !== 1 || !Array.isArray(candidate.workspaces)) {
+  if (![1, 2].includes(Number(candidate.schemaVersion)) || !Array.isArray(candidate.workspaces)) {
     throw new Error('This backup uses an unsupported Tabitha Workspaces format.');
   }
   if (candidate.workspaces.length === 0) {
     throw new Error('A library must contain at least one workspace.');
   }
+  const now = Date.now();
+  const isLegacy = Number(candidate.schemaVersion) === 1;
+  const migratedFolder: Folder = {
+    id: `folder-${crypto.randomUUID()}`,
+    name: 'Personal',
+    description: 'Migrated home for your existing workspaces.',
+    createdAt: now,
+    updatedAt: now,
+    order: 0,
+  };
+  const folders = isLegacy
+    ? [migratedFolder]
+    : Array.isArray(candidate.folders)
+      ? candidate.folders
+      : [];
+  const fallbackFolder = folders.find((item) => !item.trashedAt) ?? migratedFolder;
+  if (folders.length === 0) folders.push(fallbackFolder);
   return {
     ...candidate,
+    schemaVersion: 2,
     revision: Number.isFinite(candidate.revision) ? candidate.revision : 0,
     updatedAt: Number.isFinite(candidate.updatedAt) ? candidate.updatedAt : Date.now(),
-    folders: Array.isArray(candidate.folders) ? candidate.folders : [],
+    workspaces: candidate.workspaces.map((item) => ({
+      ...item,
+      folderId: isLegacy ? migratedFolder.id : item.folderId || fallbackFolder.id,
+    })),
+    folders,
     collections: Array.isArray(candidate.collections) ? candidate.collections : [],
     links: Array.isArray(candidate.links) ? candidate.links : [],
     notes: Array.isArray(candidate.notes) ? candidate.notes : [],
@@ -222,7 +258,13 @@ export const markTrashed = (state: LibraryState, kind: EntityKind, id: string): 
     case 'workspace':
       return { ...state, workspaces: mark(state.workspaces) };
     case 'folder':
-      return { ...state, folders: mark(state.folders) };
+      return {
+        ...state,
+        folders: mark(state.folders),
+        workspaces: state.workspaces.map((item) =>
+          item.folderId === id ? { ...item, trashedAt: now, updatedAt: now } : item,
+        ),
+      };
     case 'collection':
       return { ...state, collections: mark(state.collections) };
     case 'link':
@@ -246,7 +288,17 @@ export const restoreTrashed = (state: LibraryState, kind: EntityKind, id: string
     case 'workspace':
       return { ...state, workspaces: restore(state.workspaces) };
     case 'folder':
-      return { ...state, folders: restore(state.folders) };
+      return {
+        ...state,
+        folders: restore(state.folders),
+        workspaces: state.workspaces.map((item) => {
+          if (item.folderId !== id) return item;
+          const restoredItem = { ...item };
+          delete restoredItem.trashedAt;
+          restoredItem.updatedAt = now;
+          return restoredItem;
+        }),
+      };
     case 'collection':
       return { ...state, collections: restore(state.collections) };
     case 'link':
@@ -257,35 +309,28 @@ export const restoreTrashed = (state: LibraryState, kind: EntityKind, id: string
 };
 
 export const purgeTrash = (state: LibraryState): LibraryState => {
-  const removedWorkspaceIds = new Set(
-    state.workspaces.filter((item) => item.trashedAt).map((item) => item.id),
-  );
-  const removedFolderIds = new Set(
+  const directlyRemovedFolderIds = new Set(
     state.folders.filter((item) => item.trashedAt).map((item) => item.id),
+  );
+  const removedWorkspaceIds = new Set(
+    state.workspaces
+      .filter((item) => item.trashedAt || directlyRemovedFolderIds.has(item.folderId))
+      .map((item) => item.id),
   );
   return {
     ...state,
-    workspaces: state.workspaces.filter((item) => !item.trashedAt),
-    folders: state.folders.filter(
+    workspaces: state.workspaces.filter(
+      (item) => !item.trashedAt && !directlyRemovedFolderIds.has(item.folderId),
+    ),
+    folders: state.folders.filter((item) => !item.trashedAt),
+    collections: state.collections.filter(
       (item) => !item.trashedAt && !removedWorkspaceIds.has(item.workspaceId),
     ),
-    collections: state.collections.filter(
-      (item) =>
-        !item.trashedAt &&
-        !removedWorkspaceIds.has(item.workspaceId) &&
-        !(item.folderId && removedFolderIds.has(item.folderId)),
-    ),
     links: state.links.filter(
-      (item) =>
-        !item.trashedAt &&
-        !removedWorkspaceIds.has(item.workspaceId) &&
-        !(item.folderId && removedFolderIds.has(item.folderId)),
+      (item) => !item.trashedAt && !removedWorkspaceIds.has(item.workspaceId),
     ),
     notes: state.notes.filter(
-      (item) =>
-        !item.trashedAt &&
-        !removedWorkspaceIds.has(item.workspaceId) &&
-        !(item.folderId && removedFolderIds.has(item.folderId)),
+      (item) => !item.trashedAt && !removedWorkspaceIds.has(item.workspaceId),
     ),
   };
 };

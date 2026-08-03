@@ -14,9 +14,11 @@ import {
   normalizeTags,
   noteBacklinks,
   purgeTrash,
+  removeSavedTab,
   reorderEntities,
   restoreTrashed,
   searchLibrary,
+  updateSavedTab,
 } from '../../src/domain/library';
 import type {
   BaseEntity,
@@ -157,6 +159,10 @@ export function App() {
       setToast('Create another workspace before deleting this one.');
       return;
     }
+    if (kind === 'folder' && active(library.folders).length === 1) {
+      setToast('Create another folder before deleting this one.');
+      return;
+    }
     await persist(markTrashed(library, kind, id));
     setToast('Moved to the recycle bin.');
   };
@@ -238,6 +244,7 @@ export function App() {
       </div>
     );
   const visibleWorkspaces = active(library.workspaces);
+  const visibleFolders = active(library.folders);
 
   return (
     <div
@@ -263,32 +270,60 @@ export function App() {
           ))}
         </nav>
         <div class="section-label">
-          <span>Workspaces</span>
-          <button title="New workspace" onClick={() => setEditor({ kind: 'workspace' })}>
-            ＋
-          </button>
-        </div>
-        <div class="workspace-list">
-          {visibleWorkspaces.map((item) => (
-            <button
-              draggable
-              class={item.id === selectedWorkspaceId ? 'workspace active' : 'workspace'}
-              onDragStart={() => setDragged({ kind: 'workspace', id: item.id })}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={() =>
-                void (dragged?.kind === 'collection'
-                  ? moveCollectionToWorkspace(item.id)
-                  : handleDrop('workspace', item.id))
-              }
-              onClick={() => {
-                setSelectedWorkspaceId(item.id);
-                setView('overview');
-              }}
-            >
-              <i style={{ background: item.color }} />
-              <span>{item.name}</span>
+          <span>Folders</span>
+          <div>
+            <button title="New folder" onClick={() => setEditor({ kind: 'folder' })}>
+              ＋
             </button>
-          ))}
+            <button title="New workspace" onClick={() => setEditor({ kind: 'workspace' })}>
+              W
+            </button>
+          </div>
+        </div>
+        <div class="folder-tree">
+          {visibleFolders.map((folder) => {
+            const folderWorkspaces = visibleWorkspaces.filter(
+              (workspace) => workspace.folderId === folder.id,
+            );
+            return (
+              <section class="folder-node">
+                <button
+                  class="folder-name"
+                  onClick={() => {
+                    if (folderWorkspaces[0]) setSelectedWorkspaceId(folderWorkspaces[0].id);
+                    setView('overview');
+                  }}
+                  onDblClick={() => setEditor({ kind: 'folder', id: folder.id })}
+                  title="Double-click to edit folder"
+                >
+                  <span>▾</span>
+                  {folder.name}
+                </button>
+                <div class="workspace-list">
+                  {folderWorkspaces.map((item) => (
+                    <button
+                      draggable
+                      class={item.id === selectedWorkspaceId ? 'workspace active' : 'workspace'}
+                      onDragStart={() => setDragged({ kind: 'workspace', id: item.id })}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() =>
+                        void (dragged?.kind === 'collection'
+                          ? moveCollectionToWorkspace(item.id)
+                          : handleDrop('workspace', item.id))
+                      }
+                      onClick={() => {
+                        setSelectedWorkspaceId(item.id);
+                        setView('overview');
+                      }}
+                    >
+                      <i style={{ background: item.color }} />
+                      <span>{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
         <nav class="utility-nav">
           {NAV.slice(5).map((item) => (
@@ -371,6 +406,14 @@ export function App() {
               onCapture={captureWindow}
               onDrag={setDragged}
               onDrop={handleDrop}
+              onUpdate={(collection) =>
+                persist({
+                  ...library,
+                  collections: library.collections.map((item) =>
+                    item.id === collection.id ? collection : item,
+                  ),
+                })
+              }
               onLayoutChange={(sessionLayout) =>
                 void persist({
                   ...library,
@@ -701,6 +744,7 @@ function Sessions({
   onCapture,
   onDrag,
   onDrop,
+  onUpdate,
   onLayoutChange,
 }: {
   library: LibraryState;
@@ -711,18 +755,12 @@ function Sessions({
   onCapture: () => Promise<void>;
   onDrag: (value: { kind: 'collection'; id: string }) => void;
   onDrop: (kind: 'collection', id: string) => Promise<void>;
+  onUpdate: (collection: Collection) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
 }) {
-  const [folderFilter, setFolderFilter] = useState<string>('all');
-  const folders = active(library.folders.filter((item) => item.workspaceId === workspaceId));
   const collections = active(
     library.collections.filter((item) => item.workspaceId === workspaceId),
   );
-  const visibleCollections = collections.filter((item) => {
-    if (folderFilter === 'all') return true;
-    if (folderFilter === 'unfiled') return !item.folderId;
-    return item.folderId === folderFilter;
-  });
   return (
     <>
       <PageHeading eyebrow="Saved browser state" title="Sessions">
@@ -740,69 +778,29 @@ function Sessions({
             List
           </button>
         </div>
-        <button class="button ghost" onClick={() => onEdit({ kind: 'folder' })}>
-          New folder
-        </button>
         <button class="button primary" onClick={() => void onCapture()}>
           Save current window
         </button>
       </PageHeading>
-      <section class="folder-guide">
-        <div>
-          <strong>Folders group saved items inside this workspace.</strong>
-          <span>
-            Create one here, then choose it while editing a collection, saved link, or note.
-          </span>
-        </div>
-      </section>
-      <div class="folder-row" aria-label="Filter sessions by folder">
-        <button
-          class={folderFilter === 'all' ? 'active' : ''}
-          onClick={() => setFolderFilter('all')}
-        >
-          <span>All</span>
-          <strong>All sessions</strong>
-          <small>{collections.length} sessions</small>
-        </button>
-        <button
-          class={folderFilter === 'unfiled' ? 'active' : ''}
-          onClick={() => setFolderFilter('unfiled')}
-        >
-          <span>—</span>
-          <strong>Unfiled</strong>
-          <small>{collections.filter((item) => !item.folderId).length} sessions</small>
-        </button>
-        {folders.map((folder) => (
-          <div class={folderFilter === folder.id ? 'folder-filter active' : 'folder-filter'}>
-            <button onClick={() => setFolderFilter(folder.id)}>
-              <span>▰</span>
-              <strong>{folder.name}</strong>
-              <small>
-                {collections.filter((item) => item.folderId === folder.id).length} sessions
-              </small>
-            </button>
-            <button
-              class="folder-edit"
-              onClick={() => onEdit({ kind: 'folder', id: folder.id })}
-              aria-label={`Edit ${folder.name}`}
-            >
-              Edit
-            </button>
-          </div>
-        ))}
-      </div>
-      {visibleCollections.length === 0 ? (
+      {collections.length === 0 ? (
         <Empty
-          title={collections.length === 0 ? 'No saved sessions' : 'No sessions in this folder'}
-          copy={
-            collections.length === 0
-              ? 'Capture the current window or create an empty session.'
-              : 'Edit a collection to place it here, or choose another folder.'
-          }
+          title="No saved sessions"
+          copy="Capture the current window or create an empty session."
         />
+      ) : library.settings.sessionLayout === 'list' ? (
+        <div class="session-list">
+          {collections.map((item) => (
+            <SessionListEditor
+              item={item}
+              onSave={onUpdate}
+              onRestore={onRestore}
+              onTrash={() => void onTrash('collection', item.id)}
+            />
+          ))}
+        </div>
       ) : (
-        <div class={library.settings.sessionLayout === 'list' ? 'session-list' : 'card-grid'}>
-          {visibleCollections.map((item) => (
+        <div class="card-grid">
+          {collections.map((item) => (
             <SessionCard
               item={item}
               onRestore={onRestore}
@@ -811,12 +809,92 @@ function Sessions({
               draggable
               onDragStart={() => onDrag({ kind: 'collection', id: item.id })}
               onDrop={() => void onDrop('collection', item.id)}
-              list={library.settings.sessionLayout === 'list'}
             />
           ))}
         </div>
       )}
     </>
+  );
+}
+
+function SessionListEditor({
+  item,
+  onSave,
+  onRestore,
+  onTrash,
+}: {
+  item: Collection;
+  onSave: (collection: Collection) => Promise<void>;
+  onRestore: (collection: Collection) => Promise<void>;
+  onTrash: () => void;
+}) {
+  const [tabs, setTabs] = useState(item.tabs);
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => setTabs(item.tabs), [item]);
+  const changeTab = (id: string, change: { title?: string; url?: string }): void => {
+    setTabs((current) => updateSavedTab({ ...item, tabs: current }, id, change).tabs);
+    setDirty(true);
+  };
+  const save = async (): Promise<void> => {
+    for (const tab of tabs) {
+      try {
+        new URL(tab.url);
+      } catch {
+        alert(`Enter a complete valid URL for “${tab.title || 'Untitled tab'}”.`);
+        return;
+      }
+    }
+    await onSave({
+      ...item,
+      tabs: tabs.map((tab, order) => ({ ...tab, order })),
+      updatedAt: Date.now(),
+    });
+    setDirty(false);
+  };
+  return (
+    <article class="session-list-group">
+      <header>
+        <div>
+          <strong>{item.name}</strong>
+          <small>{tabs.length} tabs</small>
+        </div>
+        <div>
+          {dirty && <button onClick={() => void save()}>Save changes</button>}
+          <button onClick={() => void onRestore(item)}>Restore</button>
+          <button class="danger" onClick={onTrash}>
+            Trash
+          </button>
+        </div>
+      </header>
+      {tabs.map((tab) => (
+        <div class="editable-tab-row">
+          <span class="tab-favicon">
+            {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
+          </span>
+          <input
+            aria-label="Tab title"
+            value={tab.title}
+            onInput={(event) => changeTab(tab.id, { title: event.currentTarget.value })}
+          />
+          <input
+            type="url"
+            aria-label="Tab URL"
+            value={tab.url}
+            onInput={(event) => changeTab(tab.id, { url: event.currentTarget.value })}
+          />
+          <button
+            class="tab-delete"
+            aria-label={`Delete ${tab.title}`}
+            onClick={() => {
+              setTabs((current) => removeSavedTab({ ...item, tabs: current }, tab.id).tabs);
+              setDirty(true);
+            }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </article>
   );
 }
 
@@ -1362,13 +1440,15 @@ function EditorDialog({
       : '',
   );
   const [folderId, setFolderId] = useState(
-    'folderId' in (typedExisting ?? {})
-      ? String((typedExisting as Collection | SavedLink | Note).folderId ?? '')
-      : '',
+    target.kind === 'workspace' && typedExisting
+      ? (typedExisting as Workspace).folderId
+      : (library.workspaces.find((item) => item.id === workspaceId)?.folderId ??
+          active(library.folders)[0]?.id ??
+          ''),
   );
   const [editorWorkspaceId, setEditorWorkspaceId] = useState(
     'workspaceId' in (typedExisting ?? {})
-      ? String((typedExisting as Folder | Collection | SavedLink | Note).workspaceId)
+      ? String((typedExisting as Collection | SavedLink | Note).workspaceId)
       : workspaceId,
   );
   const [color, setColor] = useState(
@@ -1379,7 +1459,7 @@ function EditorDialog({
   const [collectionTabs, setCollectionTabs] = useState(
     target.kind === 'collection' && typedExisting ? (typedExisting as Collection).tabs : [],
   );
-  const folders = active(library.folders.filter((item) => item.workspaceId === editorWorkspaceId));
+  const folders = active(library.folders);
 
   const submit = async (event: SubmitEvent): Promise<void> => {
     event.preventDefault();
@@ -1401,13 +1481,12 @@ function EditorDialog({
       order: existing?.order ?? (library[plural] as BaseEntity[]).length,
     };
     let entity: Workspace | Folder | Collection | SavedLink | Note;
-    if (target.kind === 'workspace') entity = { ...common, description, color };
-    else if (target.kind === 'folder') entity = { ...common, workspaceId, description };
+    if (target.kind === 'workspace') entity = { ...common, description, color, folderId };
+    else if (target.kind === 'folder') entity = { ...common, description };
     else if (target.kind === 'collection')
       entity = {
         ...common,
         workspaceId: editorWorkspaceId,
-        ...(folderId ? { folderId } : {}),
         description,
         tags: normalizeTags(tags),
         tabs: collectionTabs.map((tab, order) => ({ ...tab, order })),
@@ -1420,7 +1499,6 @@ function EditorDialog({
       entity = {
         ...common,
         workspaceId: editorWorkspaceId,
-        ...(folderId ? { folderId } : {}),
         url,
         description,
         tags: normalizeTags(tags),
@@ -1429,7 +1507,6 @@ function EditorDialog({
       entity = {
         ...common,
         workspaceId: editorWorkspaceId,
-        ...(folderId ? { folderId } : {}),
         body,
         tags: normalizeTags(tags),
       };
@@ -1481,6 +1558,14 @@ function EditorDialog({
                 value={color}
                 onInput={(event) => setColor(event.currentTarget.value)}
               />
+            </label>
+            <label>
+              Folder
+              <select value={folderId} onChange={(event) => setFolderId(event.currentTarget.value)}>
+                {folders.map((folder) => (
+                  <option value={folder.id}>{folder.name}</option>
+                ))}
+              </select>
             </label>
           </>
         )}
@@ -1557,15 +1642,6 @@ function EditorDialog({
               >
                 {active(library.workspaces).map((item) => (
                   <option value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Folder
-              <select value={folderId} onChange={(event) => setFolderId(event.currentTarget.value)}>
-                <option value="">No folder</option>
-                {folders.map((folder) => (
-                  <option value={folder.id}>{folder.name}</option>
                 ))}
               </select>
             </label>
