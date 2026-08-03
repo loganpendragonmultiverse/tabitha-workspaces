@@ -59,6 +59,7 @@ const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'trash', label: 'Recycle bin', icon: '♲' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
 ];
+const APP_VERSION = browser.runtime.getManifest().version;
 
 const send = async (request: BackgroundRequest): Promise<BackgroundResponse> =>
   browser.runtime.sendMessage(request);
@@ -354,6 +355,17 @@ export function App() {
                       Remove
                     </button>
                   )}
+                  <button
+                    class="folder-security remove"
+                    title={`Move ${folder.name} to the recycle bin`}
+                    aria-label={`Delete ${folder.name}`}
+                    onClick={() => {
+                      if (confirm(`Move “${folder.name}” and its workspaces to the recycle bin?`))
+                        void trash('folder', folder.id);
+                    }}
+                  >
+                    Delete
+                  </button>
                 </div>
                 <div class="workspace-list">
                   {folderWorkspaces.map((item) => (
@@ -390,7 +402,7 @@ export function App() {
           ))}
         </nav>
         <p class="privacy-note">
-          <span>●</span> Stored only in this browser
+          <span>●</span> Stored only in this browser <em>v{APP_VERSION}</em>
         </p>
       </aside>
 
