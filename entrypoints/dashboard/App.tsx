@@ -7,7 +7,13 @@ import type {
   LiveTab,
 } from '../../src/browser/messages';
 import { createId } from '../../src/domain/defaults';
-import { parseLibraryExport, serializeLibrary } from '../../src/domain/importExport';
+import {
+  mergeFolderExport,
+  parseFolderExport,
+  parseLibraryExport,
+  serializeFolder,
+  serializeLibrary,
+} from '../../src/domain/importExport';
 import {
   extractWikiLinks,
   markTrashed,
@@ -28,6 +34,7 @@ import type {
   LibraryState,
   Note,
   SavedLink,
+  SearchScope,
   Settings,
   Workspace,
 } from '../../src/domain/types';
@@ -38,6 +45,7 @@ import {
   lockFolder,
   protectFolder,
   removeFolderProtection,
+  replaceStoredLibrary,
   setLibrary,
   unlockFolder,
 } from '../../src/storage/libraryStore';
@@ -85,6 +93,13 @@ const download = (filename: string, contents: string): void => {
   URL.revokeObjectURL(url);
 };
 
+const fileSafeName = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'folder';
+
 export function App() {
   const [library, setLocalLibrary] = useState<LibraryState | null>(null);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState('');
@@ -93,6 +108,7 @@ export function App() {
     return NAV.some((item) => item.id === route) ? route : 'overview';
   });
   const [query, setQuery] = useState('');
+  const [searchScope, setSearchScope] = useState<SearchScope>('all');
   const [editor, setEditor] = useState<EditorTarget | null>(null);
   const [liveTabs, setLiveTabs] = useState<LiveTab[]>([]);
   const [toast, setToast] = useState('');
@@ -139,8 +155,8 @@ export function App() {
   };
 
   const searchResults = useMemo(
-    () => (library && query.trim() ? searchLibrary(library, query) : []),
-    [library, query],
+    () => (library && query.trim() ? searchLibrary(library, query, searchScope) : []),
+    [library, query, searchScope],
   );
 
   const refreshLiveTabs = async (): Promise<void> => {
@@ -232,16 +248,39 @@ export function App() {
   const importBackup = async (file?: File): Promise<void> => {
     if (!file || !library) return;
     try {
-      const imported = parseLibraryExport(await file.text());
-      if (
-        !confirm(
-          'Replace the current library with this backup? Export your current library first if needed.',
+      const input = await file.text();
+      let envelope: { format?: string };
+      try {
+        envelope = JSON.parse(input) as { format?: string };
+      } catch {
+        throw new Error('The selected file is not valid JSON.');
+      }
+      if (envelope.format === 'tabitha-workspaces-folder') {
+        const folderBackup = parseFolderExport(input);
+        if (
+          !confirm(
+            `Import the folder “${folderBackup.folder.name}”? A folder with the same identity will be replaced.`,
+          )
         )
-      )
-        return;
-      await persist(imported);
-      setSelectedWorkspaceId(active(imported.workspaces)[0]?.id ?? '');
-      setToast('Backup imported successfully.');
+          return;
+        const stored = mergeFolderExport(await getStoredLibrary(), folderBackup);
+        const runtime = await replaceStoredLibrary(stored);
+        setLocalLibrary(runtime);
+        setSelectedWorkspaceId(active(runtime.workspaces)[0]?.id ?? '');
+        setToast('Folder backup imported successfully.');
+      } else {
+        const imported = parseLibraryExport(input);
+        if (
+          !confirm(
+            'Replace the current library with this backup? Export your current library first if needed.',
+          )
+        )
+          return;
+        const runtime = await replaceStoredLibrary(imported);
+        setLocalLibrary(runtime);
+        setSelectedWorkspaceId(active(runtime.workspaces)[0]?.id ?? '');
+        setToast('Library backup imported successfully.');
+      }
     } catch (error) {
       setToast(error instanceof Error ? error.message : 'The backup could not be imported.');
     } finally {
@@ -413,16 +452,26 @@ export function App() {
             <input
               value={query}
               onInput={(event) => setQuery(event.currentTarget.value)}
-              placeholder="Search tabs, links, notes, and tags…"
+              placeholder="Search workspaces, collections, and URLs…"
               aria-label="Search library"
             />
-            <kbd>Alt ⇧ T</kbd>
+            <select
+              class="search-scope"
+              value={searchScope}
+              onChange={(event) => setSearchScope(event.currentTarget.value as SearchScope)}
+              aria-label="Filter search results"
+            >
+              <option value="all">All</option>
+              <option value="workspace">Workspaces</option>
+              <option value="collection">Collections</option>
+              <option value="url">URLs</option>
+            </select>
             {query && (
               <div class="search-results">
                 {searchResults.length === 0 ? (
                   <p>No saved content matched.</p>
                 ) : (
-                  searchResults.slice(0, 12).map((result) => (
+                  searchResults.slice(0, 50).map((result) => (
                     <button onClick={() => openSearchResult(result.kind, result.workspaceId)}>
                       <span class="result-kind">{result.kind}</span>
                       <strong>{result.name}</strong>
@@ -488,6 +537,12 @@ export function App() {
                   settings: { ...library.settings, sessionLayout },
                 })
               }
+              onCollapsedChange={(collapsedCollectionIds) =>
+                void persist({
+                  ...library,
+                  settings: { ...library.settings, collapsedCollectionIds },
+                })
+              }
             />
           )}
           {view === 'links' && (
@@ -530,6 +585,19 @@ export function App() {
                     serializeLibrary(stored),
                   ),
                 )
+              }
+              onExportFolders={() =>
+                void getStoredLibrary().then((stored) => {
+                  const folders = active(stored.folders);
+                  const date = new Date().toISOString().slice(0, 10);
+                  folders.forEach((folder) =>
+                    download(
+                      `tabitha-${fileSafeName(folder.name)}-${folder.id.slice(0, 8)}-${date}.json`,
+                      serializeFolder(stored, folder.id),
+                    ),
+                  );
+                  setToast(`Exported ${folders.length} separate folder backups.`);
+                })
               }
               onImport={() => importInput.current?.click()}
             />
@@ -945,6 +1013,7 @@ function Sessions({
   onDrop,
   onUpdate,
   onLayoutChange,
+  onCollapsedChange,
 }: {
   library: LibraryState;
   workspaceId: string;
@@ -956,20 +1025,24 @@ function Sessions({
   onDrop: (kind: 'collection', id: string) => Promise<void>;
   onUpdate: (collection: Collection) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
+  onCollapsedChange: (ids: string[]) => void;
 }) {
   const collections = active(
     library.collections.filter((item) => item.workspaceId === workspaceId),
   );
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const toggle = (id: string): void =>
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  const setAllCollapsed = (value: boolean): void =>
-    setCollapsed(value ? new Set(collections.map((item) => item.id)) : new Set());
+  const collapsed = new Set(library.settings.collapsedCollectionIds);
+  const toggle = (id: string): void => {
+    if (collapsed.has(id)) collapsed.delete(id);
+    else collapsed.add(id);
+    onCollapsedChange([...collapsed]);
+  };
+  const setAllCollapsed = (value: boolean): void => {
+    const scopedIds = new Set(collections.map((item) => item.id));
+    const next = new Set(library.settings.collapsedCollectionIds);
+    if (value) scopedIds.forEach((id) => next.add(id));
+    else scopedIds.forEach((id) => next.delete(id));
+    onCollapsedChange([...next]);
+  };
   return (
     <>
       <PageHeading eyebrow="Saved browser state" title="Sessions">
@@ -1435,11 +1508,13 @@ function SettingsView({
   settings,
   onChange,
   onExport,
+  onExportFolders,
   onImport,
 }: {
   settings: Settings;
   onChange: (settings: Settings) => void;
   onExport: () => void;
+  onExportFolders: () => void;
   onImport: () => void;
 }) {
   const [syncConfig, setSyncConfig] = useState<CloudSyncPublicConfig | null>(null);
@@ -1582,7 +1657,10 @@ function SettingsView({
         </section>
         <section class="settings-card">
           <h2>Backup and portability</h2>
-          <p>Export the complete versioned library or replace it from a previous backup.</p>
+          <p>
+            Export the complete library or download one restorable JSON file per folder. Protected
+            folder files keep their contents encrypted.
+          </p>
           <p class="backup-warning">
             <strong>Updating an unpacked copy?</strong> Export JSON first. Removing the old
             extension or loading the replacement from a different folder can give it a new browser
@@ -1590,10 +1668,13 @@ function SettingsView({
           </p>
           <div class="button-row">
             <button class="button primary" onClick={onExport}>
-              Export JSON
+              Export complete library
+            </button>
+            <button class="button ghost" onClick={onExportFolders}>
+              Export separate folder files
             </button>
             <button class="button ghost" onClick={onImport}>
-              Import backup
+              Import library or folder
             </button>
           </div>
           <small>No library data is transmitted by these actions.</small>

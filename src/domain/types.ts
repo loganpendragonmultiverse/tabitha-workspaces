@@ -74,6 +74,7 @@ export interface Note extends BaseEntity {
 export type Theme = 'system' | 'light' | 'dark';
 export type Density = 'comfortable' | 'compact';
 export type SessionLayout = 'cards' | 'compact' | 'list';
+export type SearchScope = 'all' | 'workspace' | 'collection' | 'url';
 
 export interface Settings {
   theme: Theme;
@@ -85,6 +86,7 @@ export interface Settings {
   automaticSnapshots: boolean;
   snapshotIntervalMinutes: number;
   sessionLayout: SessionLayout;
+  collapsedCollectionIds: string[];
   showWelcomeBanner: boolean;
   openDashboardOnNewTab: boolean;
 }
@@ -106,6 +108,17 @@ export interface LibraryExport {
   exportedAt: string;
   version: 3;
   library: LibraryState;
+}
+
+export interface FolderExport {
+  format: 'tabitha-workspaces-folder';
+  exportedAt: string;
+  version: 1;
+  folder: Folder;
+  workspaces: Workspace[];
+  collections: Collection[];
+  links: SavedLink[];
+  notes: Note[];
 }
 
 export interface CapturedBrowserTab {

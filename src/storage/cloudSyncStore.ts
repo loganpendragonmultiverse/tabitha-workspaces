@@ -7,6 +7,8 @@ export interface CloudSyncConfig {
   username: string;
   password: string;
   lastSyncedAt?: number;
+  lastSyncedFingerprint?: string;
+  lastRemoteEtag?: string;
   lastError?: string;
 }
 
@@ -32,11 +34,17 @@ export const setCloudSyncConfig = async (
 ): Promise<CloudSyncConfig> => {
   const current = await getCloudSyncConfig();
   const { lastError, ...values } = next;
+  const endpointChanged = current.url !== next.url || current.username !== next.username;
   const config: CloudSyncConfig = {
     ...current,
     ...values,
     password: next.password || current.password,
   };
+  if (endpointChanged) {
+    delete config.lastSyncedAt;
+    delete config.lastSyncedFingerprint;
+    delete config.lastRemoteEtag;
+  }
   if (lastError === null) delete config.lastError;
   else if (lastError) config.lastError = lastError;
   await cloudSyncItem.setValue(config);
