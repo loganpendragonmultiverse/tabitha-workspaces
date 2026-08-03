@@ -122,9 +122,6 @@ and data boundaries are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.m
   replacement from another directory can change its browser extension ID and isolate the old local
   storage.
 
-See [STORE-SUBMISSION.md](docs/STORE-SUBMISSION.md) for the prepared Chrome Web Store, Firefox
-Add-ons, and Microsoft Edge Add-ons submission checklist and listing copy.
-
 ## Contributing and support
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change. Use GitHub Issues for verified
