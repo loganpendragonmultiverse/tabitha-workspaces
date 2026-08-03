@@ -52,7 +52,7 @@ export const createDefaultState = (): LibraryState => {
   const now = Date.now();
   const folder = createFolder();
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     revision: 0,
     updatedAt: now,
     workspaces: [createWorkspace('My Workspace', undefined, folder.id)],

@@ -7,6 +7,7 @@
 - `entrypoints/dashboard/` provides the complete management interface.
 - `entrypoints/popup/` provides fast capture, save-link, recent-session, and dashboard actions.
 - `src/domain/` contains browser-independent models and operations.
+- `src/security/` implements protected-folder key derivation and authenticated encryption.
 - `src/storage/` owns the versioned local library record and the separate optional WebDAV
   configuration record.
 - `src/sync/` implements explicit, opt-in WebDAV backup synchronization.
@@ -15,20 +16,19 @@
 
 ```text
 Library
-├── Workspaces
-│   ├── Folders
-│   ├── Collections (saved tab sessions)
-│   ├── Saved links
-│   └── Notes
+├── Folders (optional encrypted container)
+│   └── Workspaces
+│       ├── Collections (saved tab sessions)
+│       ├── Saved links
+│       └── Notes
 └── Settings
 ```
 
 Entity identifiers are random UUIDs. Order is explicit rather than inferred from array position.
 Deletion sets `trashedAt`; permanent deletion also removes descendants of deleted workspaces and
 top-level folders. Folders contain workspaces; workspaces contain collections, links, and notes.
-Backups use a format marker and schema version before accepting replacement data. The version 2
-normalizer migrates version 1 libraries into one default folder while preserving existing workspaces
-and saved content.
+Backups use a format marker and schema version before accepting replacement data. The version 3
+normalizer migrates version 1 and version 2 libraries while preserving workspaces and saved content.
 
 ## Browser boundary
 
@@ -44,4 +44,8 @@ plan. WXT generates a Chromium service worker and Firefox background script from
 - No remote code, CDN resources, or analytics. Network requests occur only when a user configures
   WebDAV synchronization and go only to the granted origin.
 - Import accepts only the versioned JSON envelope and replaces data only after explicit confirmation.
+- Password-protected folders are sealed before persistence with AES-256-GCM. The key is derived with
+  PBKDF2-SHA-256 (310,000 iterations and a random 128-bit salt), stored only in browser session
+  storage after unlock, and cleared when the folder locks or the browser session ends. Stored
+  libraries, exported backups, and WebDAV files contain only the encrypted vault.
 - Store packages contain generated application code only; development dependencies are not bundled.

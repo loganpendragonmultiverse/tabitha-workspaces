@@ -2,6 +2,15 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.4.0 - 2026-08-03
+
+- Added optional password protection for top-level folders using PBKDF2-SHA-256 and authenticated AES-256-GCM encryption.
+- Ensured protected contents remain encrypted in extension storage, JSON exports, and WebDAV backups while unlock keys remain session-only.
+- Added explicit lock, unlock, and remove-protection controls with password confirmation and recovery warnings.
+- Added distinct card, compact, and list layouts that render saved tabs inside their collection groups.
+- Added click-to-collapse collection headings plus expand-all and collapse-all controls.
+- Migrated version 1 and version 2 libraries into schema version 3 and added cryptographic round-trip, wrong-key, and storage-boundary tests.
+
 ## 1.3.0 - 2026-08-03
 
 - Reframed folders as isolated top-level containers that hold workspaces, matching the intended personal/work/family separation model.

@@ -177,8 +177,14 @@ body {
 .folder-node {
   min-width: 0;
 }
+.folder-heading {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
 .folder-name {
-  width: 100%;
+  min-width: 0;
+  flex: 1;
   padding: 5px 9px;
   display: flex;
   gap: 7px;
@@ -189,6 +195,25 @@ body {
   font-size: 11px;
   font-weight: 750;
   text-align: left;
+}
+.folder-security {
+  padding: 4px 5px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 8px;
+  font-weight: 800;
+}
+.folder-security:hover {
+  color: var(--accent);
+  background: var(--surface-2);
+}
+.folder-security.remove:hover {
+  color: var(--danger);
+}
+.folder-node.locked .folder-name {
+  color: var(--text);
 }
 .folder-name:hover {
   color: var(--text);
@@ -586,6 +611,120 @@ main {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
+.collection-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  margin: -16px 0 14px;
+}
+.collection-controls button,
+.collection-header button {
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 750;
+}
+.collection-controls button:hover,
+.collection-header button:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+.session-groups {
+  display: grid;
+  gap: 13px;
+}
+.collection-group {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+}
+.collection-header {
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.collection-header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.collection-header small {
+  color: var(--muted);
+}
+.collection-chevron {
+  width: 25px;
+  padding: 3px !important;
+  color: var(--accent) !important;
+  font-size: 18px !important;
+  line-height: 1;
+}
+.saved-tab-cards {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+.saved-tab-compact {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+  gap: 7px;
+}
+.saved-tab-tile {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  color: var(--text);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+}
+.saved-tab-compact .saved-tab-tile {
+  padding: 7px 9px;
+  border-radius: 7px;
+}
+.saved-tab-tile:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+.saved-tab-tile > span:last-child {
+  min-width: 0;
+}
+.saved-tab-tile strong,
+.saved-tab-tile small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saved-tab-tile strong {
+  font-size: 11px;
+}
+.saved-tab-tile small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.saved-tab-compact .saved-tab-tile small {
+  display: none;
+}
+.empty-collection {
+  grid-column: 1 / -1;
+  margin: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
 .session-list {
   display: grid;
   gap: 8px;
@@ -604,6 +743,7 @@ main {
   gap: 14px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
+  cursor: pointer;
 }
 .session-list-group > header div {
   display: flex;
@@ -1267,6 +1407,23 @@ main {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+.password-dialog {
+  width: min(500px, 100%);
+}
+.password-dialog > p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.security-note {
+  margin-top: 14px;
+  padding: 11px 12px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 10px;
+  line-height: 1.55;
 }
 .toast {
   position: fixed;

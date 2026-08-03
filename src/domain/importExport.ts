@@ -4,7 +4,7 @@ import type { LibraryExport, LibraryState } from './types';
 export const exportLibrary = (library: LibraryState): LibraryExport => ({
   format: 'tabitha-workspaces',
   exportedAt: new Date().toISOString(),
-  version: 2,
+  version: 3,
   library,
 });
 
@@ -22,7 +22,7 @@ export const parseLibraryExport = (input: string): LibraryState => {
   const envelope = parsed as Partial<LibraryExport>;
   if (
     envelope.format !== 'tabitha-workspaces' ||
-    ![1, 2].includes(Number(envelope.version)) ||
+    ![1, 2, 3].includes(Number(envelope.version)) ||
     !envelope.library
   ) {
     throw new Error('The selected file is not a supported Tabitha Workspaces backup.');

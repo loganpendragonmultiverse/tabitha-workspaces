@@ -17,6 +17,23 @@ export interface Workspace extends BaseEntity {
 
 export interface Folder extends BaseEntity {
   description: string;
+  protection?: FolderProtection;
+  /** Runtime-only state. This flag is removed before the library is persisted. */
+  locked?: boolean;
+}
+
+export interface EncryptedPayload {
+  iv: string;
+  ciphertext: string;
+}
+
+export interface FolderProtection {
+  version: 1;
+  algorithm: 'AES-256-GCM';
+  kdf: 'PBKDF2-SHA-256';
+  iterations: number;
+  salt: string;
+  vault: EncryptedPayload;
 }
 
 export interface SavedTab {
@@ -56,7 +73,7 @@ export interface Note extends BaseEntity {
 
 export type Theme = 'system' | 'light' | 'dark';
 export type Density = 'comfortable' | 'compact';
-export type SessionLayout = 'cards' | 'list';
+export type SessionLayout = 'cards' | 'compact' | 'list';
 
 export interface Settings {
   theme: Theme;
@@ -73,7 +90,7 @@ export interface Settings {
 }
 
 export interface LibraryState {
-  schemaVersion: 2;
+  schemaVersion: 3;
   revision: number;
   updatedAt: number;
   workspaces: Workspace[];
@@ -87,7 +104,7 @@ export interface LibraryState {
 export interface LibraryExport {
   format: 'tabitha-workspaces';
   exportedAt: string;
-  version: 2;
+  version: 3;
   library: LibraryState;
 }
 

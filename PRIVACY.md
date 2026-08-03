@@ -16,6 +16,11 @@ or third-party analytics service. The extension cannot read page contents. WebDA
 optional HTTPS host permission for only the server origin selected by the user. Its credentials are
 stored separately in local extension storage and are excluded from exports and synchronized files.
 
+When a user password-protects a folder, the workspaces, sessions, links, and notes inside it are
+encrypted locally before they are written to extension storage, a JSON backup, or WebDAV. Folder
+names and descriptions remain visible. Passwords are never stored or transmitted, and an unlocked
+encryption key is retained only in browser session storage.
+
 Uninstalling the extension normally removes its local extension storage according to the browser's
 own behavior. Users should export a backup before uninstalling if they want to preserve their data.
 An unpacked replacement loaded from another directory may receive a different extension ID and
