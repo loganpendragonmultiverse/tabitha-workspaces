@@ -558,8 +558,9 @@ main {
 }
 .session-list-row {
   min-height: 0;
+  padding: 11px 14px;
   display: grid;
-  grid-template-columns: 120px 115px minmax(0, 1fr) auto;
+  grid-template-columns: 105px 115px minmax(0, 1fr) auto;
   gap: 15px;
   align-items: center;
 }
@@ -569,12 +570,23 @@ main {
 .session-list-row .favicon-stack {
   margin: 0;
 }
-.session-list-row > p,
+.session-list-row .session-details > p,
 .session-list-row .tags {
   display: none;
 }
 .session-list-row h3 {
   margin: 0;
+}
+.session-details {
+  min-width: 0;
+}
+.session-url {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .session-list-row footer {
   margin: 0;
@@ -698,7 +710,8 @@ main {
   margin-bottom: 17px;
   padding-bottom: 3px;
 }
-.folder-row button {
+.folder-row > button,
+.folder-filter {
   min-width: 195px;
   padding: 14px;
   display: grid;
@@ -709,17 +722,78 @@ main {
   border-radius: 12px;
   text-align: left;
 }
-.folder-row span {
+.folder-filter {
+  position: relative;
+  padding: 0;
+}
+.folder-filter > button:first-child {
+  width: 100%;
+  padding: 14px 48px 14px 14px;
+  display: grid;
+  grid-template-columns: 35px 1fr;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+.folder-row > button.active,
+.folder-filter.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+.folder-row span,
+.folder-filter span {
   grid-row: 1/3;
   color: var(--accent);
   font-size: 22px;
 }
-.folder-row strong {
+.folder-row strong,
+.folder-filter strong {
   font-size: 12px;
 }
-.folder-row small {
+.folder-row small,
+.folder-filter small {
   color: var(--muted);
   font-size: 10px;
+}
+.folder-edit {
+  position: absolute;
+  top: 9px;
+  right: 8px;
+  padding: 5px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  font-size: 9px;
+  font-weight: 700;
+}
+.folder-guide {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  font-size: 11px;
+}
+.folder-guide strong,
+.folder-guide span {
+  display: block;
+}
+.folder-guide strong {
+  margin-bottom: 3px;
+  color: var(--text);
+}
+.backup-warning {
+  padding: 10px 12px;
+  color: var(--text);
+  background: color-mix(in srgb, #e5a124 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, #e5a124 35%, var(--border));
+  border-radius: 9px;
+}
+.backup-warning strong {
+  display: block;
+  margin-bottom: 3px;
 }
 .empty {
   min-height: 280px;

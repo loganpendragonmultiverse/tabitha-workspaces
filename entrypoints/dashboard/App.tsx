@@ -556,7 +556,11 @@ function Overview({
           <small>Connected notes</small>
         </button>
       </section>
-      <SectionTitle title="Recent sessions" action="View all" onAction={() => onView('sessions')} />
+      <SectionTitle
+        title="Recently updated collections"
+        action="View all"
+        onAction={() => onView('sessions')}
+      />
       {collections.length === 0 ? (
         <Empty
           title="No sessions yet"
@@ -626,6 +630,7 @@ function SessionCard({
   onDrop?: () => void;
   list?: boolean;
 }) {
+  const primaryTab = item.tabs[0];
   return (
     <article
       class={list ? 'session-card session-list-row' : 'session-card'}
@@ -653,15 +658,18 @@ function SessionCard({
           </span>
         ))}
       </div>
-      <h3>{item.name}</h3>
-      <p>
-        {item.description ||
-          item.tabs
-            .slice(0, 3)
-            .map((tab) => tab.title)
-            .join(' · ') ||
-          'Empty session'}
-      </p>
+      <div class="session-details">
+        <h3>{item.name}</h3>
+        {list && primaryTab && <small class="session-url">{primaryTab.url}</small>}
+        <p>
+          {item.description ||
+            item.tabs
+              .slice(0, 3)
+              .map((tab) => tab.title)
+              .join(' · ') ||
+            'Empty session'}
+        </p>
+      </div>
       <div class="tags">
         {item.tags.map((tag) => (
           <span>#{tag}</span>
@@ -705,10 +713,16 @@ function Sessions({
   onDrop: (kind: 'collection', id: string) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
 }) {
+  const [folderFilter, setFolderFilter] = useState<string>('all');
   const folders = active(library.folders.filter((item) => item.workspaceId === workspaceId));
   const collections = active(
     library.collections.filter((item) => item.workspaceId === workspaceId),
   );
+  const visibleCollections = collections.filter((item) => {
+    if (folderFilter === 'all') return true;
+    if (folderFilter === 'unfiled') return !item.folderId;
+    return item.folderId === folderFilter;
+  });
   return (
     <>
       <PageHeading eyebrow="Saved browser state" title="Sessions">
@@ -733,27 +747,62 @@ function Sessions({
           Save current window
         </button>
       </PageHeading>
-      {folders.length > 0 && (
-        <div class="folder-row">
-          {folders.map((folder) => (
-            <button onClick={() => onEdit({ kind: 'folder', id: folder.id })}>
+      <section class="folder-guide">
+        <div>
+          <strong>Folders group saved items inside this workspace.</strong>
+          <span>
+            Create one here, then choose it while editing a collection, saved link, or note.
+          </span>
+        </div>
+      </section>
+      <div class="folder-row" aria-label="Filter sessions by folder">
+        <button
+          class={folderFilter === 'all' ? 'active' : ''}
+          onClick={() => setFolderFilter('all')}
+        >
+          <span>All</span>
+          <strong>All sessions</strong>
+          <small>{collections.length} sessions</small>
+        </button>
+        <button
+          class={folderFilter === 'unfiled' ? 'active' : ''}
+          onClick={() => setFolderFilter('unfiled')}
+        >
+          <span>—</span>
+          <strong>Unfiled</strong>
+          <small>{collections.filter((item) => !item.folderId).length} sessions</small>
+        </button>
+        {folders.map((folder) => (
+          <div class={folderFilter === folder.id ? 'folder-filter active' : 'folder-filter'}>
+            <button onClick={() => setFolderFilter(folder.id)}>
               <span>▰</span>
               <strong>{folder.name}</strong>
               <small>
                 {collections.filter((item) => item.folderId === folder.id).length} sessions
               </small>
             </button>
-          ))}
-        </div>
-      )}
-      {collections.length === 0 ? (
+            <button
+              class="folder-edit"
+              onClick={() => onEdit({ kind: 'folder', id: folder.id })}
+              aria-label={`Edit ${folder.name}`}
+            >
+              Edit
+            </button>
+          </div>
+        ))}
+      </div>
+      {visibleCollections.length === 0 ? (
         <Empty
-          title="No saved sessions"
-          copy="Capture the current window or create an empty session."
+          title={collections.length === 0 ? 'No saved sessions' : 'No sessions in this folder'}
+          copy={
+            collections.length === 0
+              ? 'Capture the current window or create an empty session.'
+              : 'Edit a collection to place it here, or choose another folder.'
+          }
         />
       ) : (
         <div class={library.settings.sessionLayout === 'list' ? 'session-list' : 'card-grid'}>
-          {collections.map((item) => (
+          {visibleCollections.map((item) => (
             <SessionCard
               item={item}
               onRestore={onRestore}
@@ -1154,6 +1203,11 @@ function SettingsView({
         <section class="settings-card">
           <h2>Backup and portability</h2>
           <p>Export the complete versioned library or replace it from a previous backup.</p>
+          <p class="backup-warning">
+            <strong>Updating an unpacked copy?</strong> Export JSON first. Removing the old
+            extension or loading the replacement from a different folder can give it a new browser
+            ID, and the new copy cannot read the old copy's local storage.
+          </p>
           <div class="button-row">
             <button class="button primary" onClick={onExport}>
               Export JSON

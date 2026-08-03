@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.1.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.1.0/tabitha-workspaces-1.1.0-chrome.zip)
-- [Download Tabitha Workspaces 1.1.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.1.0/tabitha-workspaces-1.1.0-firefox.zip)
+- [Download Tabitha Workspaces 1.2.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.2.0/tabitha-workspaces-1.2.0-chrome.zip)
+- [Download Tabitha Workspaces 1.2.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.2.0/tabitha-workspaces-1.2.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -28,7 +28,9 @@ After downloading, follow the short browser-specific steps in
 - Soft-deletes workspaces, folders, sessions, links, and notes into a recycle bin.
 - Reorders workspaces and sessions with drag and drop.
 - Moves sessions between workspaces by dragging them onto the workspace sidebar or editing them.
-- Switches saved sessions between card and compact list layouts.
+- Switches saved sessions between card and compact list layouts with favicon, title, and URL details.
+- Filters saved sessions by folders within the current workspace and explains how folders differ
+  from workspaces.
 - Renames recent sessions directly from the toolbar popup.
 - Optionally opens the dashboard when a new browser tab is created.
 - Creates optional replacement-style recovery snapshots on a user-selected interval.
@@ -95,8 +97,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.1.0-chrome.zip`
-- `.output/tabitha-workspaces-1.1.0-firefox.zip`
+- `.output/tabitha-workspaces-1.2.0-chrome.zip`
+- `.output/tabitha-workspaces-1.2.0-firefox.zip`
 
 ## Architecture
 
@@ -116,6 +118,12 @@ and data boundaries are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.m
   Add-ons submissions require separate developer accounts and review.
 - Recovery snapshots are disabled by default and replace the prior automatic snapshot rather than
   building an unbounded history.
+- Before removing or replacing an unpacked installation, export a JSON backup. Loading the
+  replacement from another directory can change its browser extension ID and isolate the old local
+  storage.
+
+See [STORE-SUBMISSION.md](docs/STORE-SUBMISSION.md) for the prepared Chrome Web Store, Firefox
+Add-ons, and Microsoft Edge Add-ons submission checklist and listing copy.
 
 ## Contributing and support
 

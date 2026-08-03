@@ -2,6 +2,17 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.2.0 - 2026-08-03
+
+- Added clear folder guidance and folder-based filtering for saved collections inside a workspace.
+- Made session list view genuinely compact with favicon, collection title, and primary-tab URL.
+- Corrected the workspace overview heading from “Recent sessions” to “Recently updated
+  collections.”
+- Added a prominent JSON-backup warning for unpacked-extension updates and replacements.
+- Removed unnecessary module-preload hints that caused Chromium cross-world resource warnings.
+- Added a current submission checklist and prepared listing copy for Chrome, Firefox, and Edge
+  extension stores.
+
 ## 1.1.0 - 2026-07-26
 
 - Added opt-in HTTPS WebDAV backup synchronization across browsers and devices.
