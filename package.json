@@ -1,6 +1,6 @@
 {
   "name": "tabitha-workspaces",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "A private, local-first workspace and session manager for Chromium and Firefox.",
   "type": "module",

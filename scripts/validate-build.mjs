@@ -39,6 +39,10 @@ for (const target of targets) {
   }
   const files = ['background.js', 'dashboard.html', 'popup.html'];
   await Promise.all(files.map((file) => readFile(`${target.directory}/${file}`)));
+  const dashboard = await readFile(`${target.directory}/dashboard.html`, 'utf8');
+  if (dashboard.includes('modulepreload')) {
+    throw new Error(`${target.browser}: dashboard contains unnecessary modulepreload hints`);
+  }
 }
 
 console.log('Validated Chromium and Firefox manifests, permissions, and runtime entrypoints.');

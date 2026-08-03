@@ -2,7 +2,9 @@ import preact from '@preact/preset-vite';
 import { defineConfig } from 'wxt';
 
 export default defineConfig({
-  vite: () => ({ plugins: [preact()] }),
+  // Chromium reports generated modulepreload links as cross-world extension resources.
+  // The dashboard is small enough that preloading is unnecessary, so omit those hints.
+  vite: () => ({ plugins: [preact()], build: { modulePreload: false } }),
   manifest: ({ browser }) => ({
     name: 'Tabitha Workspaces',
     short_name: 'Tabitha',

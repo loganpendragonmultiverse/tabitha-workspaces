@@ -1,6 +1,6 @@
 # Privacy policy
 
-Effective date: July 26, 2026
+Effective date: August 3, 2026
 
 Tabitha Workspaces does not collect, sell, rent, or share personal information, browsing activity,
 website content, identifiers, diagnostics, or usage analytics with the developer.
@@ -18,6 +18,8 @@ stored separately in local extension storage and are excluded from exports and s
 
 Uninstalling the extension normally removes its local extension storage according to the browser's
 own behavior. Users should export a backup before uninstalling if they want to preserve their data.
+An unpacked replacement loaded from another directory may receive a different extension ID and
+therefore a separate storage area; the in-product backup warning explains this before updates.
 
 Questions about this policy can be opened as a public support issue when they contain no sensitive
 information. Security-sensitive reports should follow [SECURITY.md](SECURITY.md).

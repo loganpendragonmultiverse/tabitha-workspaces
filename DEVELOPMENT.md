@@ -28,3 +28,12 @@ provider can be added later without changing the library schema.
 Run `npm run validate`. Both browser manifests must contain only the permissions documented in
 the README, both distributable ZIP files must be generated, and the full test suite must pass.
 Store submission is a separate step because it requires developer accounts and store review.
+
+## Version 1.2 feedback release
+
+Version 1.2 incorporates direct user feedback without changing the local-first data model. Folders
+are described and behave as filters within one workspace, list rows expose compact identifying
+details, unpacked-installation updates carry an explicit backup warning, collection terminology is
+consistent, and generated module-preload hints are disabled. The existing optional new-tab
+dashboard and collection-description fields remain available. Store packages and reviewer source
+must be built from the same tagged commit; follow [docs/STORE-SUBMISSION.md](docs/STORE-SUBMISSION.md).
