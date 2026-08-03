@@ -12,7 +12,12 @@ import {
   publicCloudSyncConfig,
   setCloudSyncConfig,
 } from '../src/storage/cloudSyncStore';
-import { getLibrary, libraryItem, updateLibrary } from '../src/storage/libraryStore';
+import {
+  getLibrary,
+  getStoredLibrary,
+  replaceStoredLibrary,
+  updateLibrary,
+} from '../src/storage/libraryStore';
 import { synchronizeWebDav, type SyncDirection } from '../src/sync/webdav';
 
 const DASHBOARD_PATH = '/dashboard.html';
@@ -171,8 +176,8 @@ const syncCloud = async (direction: SyncDirection): Promise<string> => {
   if (direction === 'auto' && !config.enabled) return 'Automatic cloud sync is disabled.';
   if (!config.url) throw new Error('Add a WebDAV backup URL in Settings first.');
   try {
-    const result = await synchronizeWebDav(config, await getLibrary(), direction);
-    if (result.action === 'downloaded') await libraryItem.setValue(result.library);
+    const result = await synchronizeWebDav(config, await getStoredLibrary(), direction);
+    if (result.action === 'downloaded') await replaceStoredLibrary(result.library);
     await setCloudSyncConfig({ ...config, lastSyncedAt: Date.now(), lastError: null });
     if (result.action === 'uploaded') return 'Cloud backup updated.';
     if (result.action === 'downloaded') return 'Cloud backup restored.';

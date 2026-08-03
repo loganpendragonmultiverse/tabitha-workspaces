@@ -210,10 +210,16 @@ export const removeSavedTab = (collection: Collection, tabId: string): Collectio
 });
 
 export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
-  if (![1, 2].includes(Number(candidate.schemaVersion)) || !Array.isArray(candidate.workspaces)) {
+  if (
+    ![1, 2, 3].includes(Number(candidate.schemaVersion)) ||
+    !Array.isArray(candidate.workspaces)
+  ) {
     throw new Error('This backup uses an unsupported Tabitha Workspaces format.');
   }
-  if (candidate.workspaces.length === 0) {
+  const hasProtectedFolder = Array.isArray(candidate.folders)
+    ? candidate.folders.some((folder) => Boolean(folder.protection))
+    : false;
+  if (candidate.workspaces.length === 0 && !hasProtectedFolder) {
     throw new Error('A library must contain at least one workspace.');
   }
   const now = Date.now();
@@ -235,7 +241,7 @@ export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
   if (folders.length === 0) folders.push(fallbackFolder);
   return {
     ...candidate,
-    schemaVersion: 2,
+    schemaVersion: 3,
     revision: Number.isFinite(candidate.revision) ? candidate.revision : 0,
     updatedAt: Number.isFinite(candidate.updatedAt) ? candidate.updatedAt : Date.now(),
     workspaces: candidate.workspaces.map((item) => ({

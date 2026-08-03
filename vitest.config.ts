@@ -6,7 +6,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'lcov'],
-      include: ['src/domain/**/*.ts'],
+      include: ['src/domain/**/*.ts', 'src/security/folderVault.ts'],
       thresholds: { lines: 85, functions: 85, branches: 75, statements: 85 },
     },
   },

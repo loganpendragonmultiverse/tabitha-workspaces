@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.3.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.3.0/tabitha-workspaces-1.3.0-chrome.zip)
-- [Download Tabitha Workspaces 1.3.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.3.0/tabitha-workspaces-1.3.0-firefox.zip)
+- [Download Tabitha Workspaces 1.4.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.4.0/tabitha-workspaces-1.4.0-chrome.zip)
+- [Download Tabitha Workspaces 1.4.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.4.0/tabitha-workspaces-1.4.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -19,6 +19,7 @@ After downloading, follow the short browser-specific steps in
 ## What it does
 
 - Uses top-level folders as isolated containers for one or more workspaces.
+- Optionally password-protects any top-level folder with PBKDF2-derived AES-256-GCM encryption.
 - Captures the current browser window as a restorable session.
 - Restores sessions into a new or existing window and optionally skips duplicate URLs.
 - Shows open tabs across browser windows and refreshes the view automatically.
@@ -28,7 +29,8 @@ After downloading, follow the short browser-specific steps in
 - Soft-deletes workspaces, folders, sessions, links, and notes into a recycle bin.
 - Reorders workspaces and sessions with drag and drop.
 - Moves sessions between workspaces by dragging them onto the workspace sidebar or editing them.
-- Switches saved sessions between cards and an editable tab-row list with favicon, title, URL, and delete controls.
+- Switches saved collections between card, compact, and editable tab-row layouts.
+- Expands or collapses individual collections by clicking their headings, with expand-all and collapse-all controls.
 - Migrates existing version 1 libraries into a default top-level folder without losing workspaces or saved content.
 - Renames recent sessions directly from the toolbar popup.
 - Optionally opens the dashboard when a new browser tab is created.
@@ -50,6 +52,8 @@ After downloading, follow the short browser-specific steps in
 
 Tabitha Workspaces has no server, account, analytics, advertising, telemetry, or remote code.
 Library data stays in browser extension storage until the user explicitly exports a backup.
+Protected-folder contents are encrypted before storage, export, or WebDAV synchronization; folder
+names and descriptions remain visible so a locked folder can be identified.
 The extension requests only the following permissions:
 
 | Permission         | Why it is needed                                                               |
@@ -96,8 +100,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.3.0-chrome.zip`
-- `.output/tabitha-workspaces-1.3.0-firefox.zip`
+- `.output/tabitha-workspaces-1.4.0-chrome.zip`
+- `.output/tabitha-workspaces-1.4.0-firefox.zip`
 
 ## Architecture
 
@@ -111,6 +115,8 @@ and data boundaries are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.m
 - Cross-browser synchronization uses a user-provided WebDAV file. Its automatic mode is
   last-write-wins using the library update time; use the manual upload/download controls before
   making simultaneous changes on multiple devices.
+- Protected-folder passwords cannot be recovered. Unlocking is session-scoped, and importing an
+  encrypted backup still requires the original password.
 - Browser-internal pages such as `chrome://settings` and `about:config` cannot be restored by an
   extension and are omitted during capture.
 - Extension-store publication is not the same as a GitHub release. Chrome Web Store and Mozilla

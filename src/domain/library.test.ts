@@ -268,7 +268,7 @@ describe('versioned backups', () => {
   it('rejects unsupported and empty libraries', () => {
     const state = fixture();
     expect(() =>
-      normalizeLibrary({ ...state, schemaVersion: 3 } as unknown as LibraryState),
+      normalizeLibrary({ ...state, schemaVersion: 4 } as unknown as LibraryState),
     ).toThrow('unsupported');
     expect(() => normalizeLibrary({ ...state, workspaces: [] })).toThrow('at least one workspace');
   });
@@ -284,7 +284,7 @@ describe('versioned backups', () => {
       folders: [],
     } as unknown as LibraryState;
     const migrated = normalizeLibrary(legacy);
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(3);
     expect(migrated.folders).toHaveLength(1);
     expect(migrated.workspaces[0]!.folderId).toBe(migrated.folders[0]!.id);
   });

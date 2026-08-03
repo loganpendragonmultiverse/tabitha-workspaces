@@ -31,7 +31,16 @@ import type {
   Settings,
   Workspace,
 } from '../../src/domain/types';
-import { getLibrary, libraryItem, setLibrary } from '../../src/storage/libraryStore';
+import {
+  getLibrary,
+  getStoredLibrary,
+  libraryItem,
+  lockFolder,
+  protectFolder,
+  removeFolderProtection,
+  setLibrary,
+  unlockFolder,
+} from '../../src/storage/libraryStore';
 
 type View = 'overview' | 'sessions' | 'links' | 'notes' | 'live' | 'trash' | 'settings';
 type EditableKind = 'workspace' | 'folder' | 'collection' | 'link' | 'note';
@@ -39,6 +48,7 @@ interface EditorTarget {
   kind: EditableKind;
   id?: string;
 }
+type PasswordAction = { folder: Folder; mode: 'protect' | 'unlock' | 'remove' };
 
 const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'overview', label: 'Overview', icon: '⌂' },
@@ -85,6 +95,7 @@ export function App() {
   const [editor, setEditor] = useState<EditorTarget | null>(null);
   const [liveTabs, setLiveTabs] = useState<LiveTab[]>([]);
   const [toast, setToast] = useState('');
+  const [passwordAction, setPasswordAction] = useState<PasswordAction | null>(null);
   const [dragged, setDragged] = useState<{ kind: 'workspace' | 'collection'; id: string } | null>(
     null,
   );
@@ -95,7 +106,7 @@ export function App() {
       setLocalLibrary(state);
       setSelectedWorkspaceId(active(state.workspaces)[0]?.id ?? '');
     });
-    return libraryItem.watch((state) => setLocalLibrary(state));
+    return libraryItem.watch(() => void getLibrary().then(setLocalLibrary));
   }, []);
 
   useEffect(() => {
@@ -275,7 +286,11 @@ export function App() {
             <button title="New folder" onClick={() => setEditor({ kind: 'folder' })}>
               ＋
             </button>
-            <button title="New workspace" onClick={() => setEditor({ kind: 'workspace' })}>
+            <button
+              title="New workspace"
+              disabled={!visibleFolders.some((folder) => !folder.locked)}
+              onClick={() => setEditor({ kind: 'workspace' })}
+            >
               W
             </button>
           </div>
@@ -286,19 +301,60 @@ export function App() {
               (workspace) => workspace.folderId === folder.id,
             );
             return (
-              <section class="folder-node">
-                <button
-                  class="folder-name"
-                  onClick={() => {
-                    if (folderWorkspaces[0]) setSelectedWorkspaceId(folderWorkspaces[0].id);
-                    setView('overview');
-                  }}
-                  onDblClick={() => setEditor({ kind: 'folder', id: folder.id })}
-                  title="Double-click to edit folder"
-                >
-                  <span>▾</span>
-                  {folder.name}
-                </button>
+              <section class={`folder-node${folder.locked ? ' locked' : ''}`}>
+                <div class="folder-heading">
+                  <button
+                    class="folder-name"
+                    onClick={() => {
+                      if (folder.locked) {
+                        setPasswordAction({ folder, mode: 'unlock' });
+                        return;
+                      }
+                      if (folderWorkspaces[0]) setSelectedWorkspaceId(folderWorkspaces[0].id);
+                      setView('overview');
+                    }}
+                    onDblClick={() =>
+                      folder.locked
+                        ? setPasswordAction({ folder, mode: 'unlock' })
+                        : setEditor({ kind: 'folder', id: folder.id })
+                    }
+                    title={folder.locked ? 'Unlock folder' : 'Double-click to edit folder'}
+                  >
+                    <span>{folder.locked ? '🔒' : '▾'}</span>
+                    {folder.name}
+                  </button>
+                  <button
+                    class="folder-security"
+                    title={
+                      folder.protection
+                        ? folder.locked
+                          ? 'Unlock folder'
+                          : 'Lock folder'
+                        : 'Protect folder'
+                    }
+                    onClick={() =>
+                      void (folder.protection
+                        ? folder.locked
+                          ? setPasswordAction({ folder, mode: 'unlock' })
+                          : lockFolder(folder.id).then((next) => {
+                              setLocalLibrary(next);
+                              setToast('Folder locked.');
+                            })
+                        : setPasswordAction({ folder, mode: 'protect' }))
+                    }
+                  >
+                    {folder.protection ? (folder.locked ? 'Unlock' : 'Lock') : 'Protect'}
+                  </button>
+                  {folder.protection && !folder.locked && (
+                    <button
+                      class="folder-security remove"
+                      title="Remove password protection"
+                      onClick={() => setPasswordAction({ folder, mode: 'remove' })}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
                 <div class="workspace-list">
                   {folderWorkspaces.map((item) => (
                     <button
@@ -456,9 +512,11 @@ export function App() {
               settings={library.settings}
               onChange={(settings) => void persist({ ...library, settings })}
               onExport={() =>
-                download(
-                  `tabitha-workspaces-${new Date().toISOString().slice(0, 10)}.json`,
-                  serializeLibrary(library),
+                void getStoredLibrary().then((stored) =>
+                  download(
+                    `tabitha-workspaces-${new Date().toISOString().slice(0, 10)}.json`,
+                    serializeLibrary(stored),
+                  ),
                 )
               }
               onImport={() => importInput.current?.click()}
@@ -491,11 +549,140 @@ export function App() {
           }}
         />
       )}
+      {passwordAction && (
+        <PasswordDialog
+          action={passwordAction}
+          onClose={() => setPasswordAction(null)}
+          onSubmit={async (password) => {
+            try {
+              const next =
+                passwordAction.mode === 'protect'
+                  ? await protectFolder(library, passwordAction.folder.id, password)
+                  : passwordAction.mode === 'unlock'
+                    ? await unlockFolder(passwordAction.folder, password)
+                    : await removeFolderProtection(library, passwordAction.folder.id);
+              setLocalLibrary(next);
+              setPasswordAction(null);
+              setToast(
+                passwordAction.mode === 'protect'
+                  ? 'Folder protected and encrypted.'
+                  : passwordAction.mode === 'unlock'
+                    ? 'Folder unlocked for this browser session.'
+                    : 'Password protection removed.',
+              );
+            } catch (error) {
+              setToast(error instanceof Error ? error.message : 'The folder could not be updated.');
+            }
+          }}
+        />
+      )}
       {toast && (
         <div class="toast" role="status">
           {toast}
         </div>
       )}
+    </div>
+  );
+}
+
+function PasswordDialog({
+  action,
+  onClose,
+  onSubmit,
+}: {
+  action: PasswordAction;
+  onClose: () => void;
+  onSubmit: (password: string) => Promise<void>;
+}) {
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const protecting = action.mode === 'protect';
+  const removing = action.mode === 'remove';
+  const submit = async (event: Event): Promise<void> => {
+    event.preventDefault();
+    if (protecting && password !== confirmation) {
+      alert('The passwords do not match.');
+      return;
+    }
+    setBusy(true);
+    await onSubmit(password);
+    setBusy(false);
+  };
+  return (
+    <div class="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <form
+        class="modal password-dialog"
+        onSubmit={(event) => void submit(event)}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <p>Folder security</p>
+            <h2>
+              {protecting ? 'Protect' : removing ? 'Remove protection from' : 'Unlock'}{' '}
+              {action.folder.name}
+            </h2>
+          </div>
+          <button type="button" class="icon-button" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </header>
+        {removing ? (
+          <p>
+            The folder will be decrypted and stored normally in this browser and in future backups.
+          </p>
+        ) : (
+          <>
+            <label>
+              Password
+              <input
+                type="password"
+                value={password}
+                minlength={protecting ? 10 : undefined}
+                autocomplete={protecting ? 'new-password' : 'current-password'}
+                onInput={(event) => setPassword(event.currentTarget.value)}
+                autofocus
+                required
+              />
+            </label>
+            {protecting && (
+              <label>
+                Confirm password
+                <input
+                  type="password"
+                  value={confirmation}
+                  minlength={10}
+                  autocomplete="new-password"
+                  onInput={(event) => setConfirmation(event.currentTarget.value)}
+                  required
+                />
+              </label>
+            )}
+          </>
+        )}
+        <div class="security-note">
+          {protecting
+            ? 'Tabitha encrypts everything inside this folder with AES-256-GCM. There is no password recovery.'
+            : removing
+              ? 'This does not delete any workspaces, sessions, links, or notes.'
+              : 'The folder stays unlocked only for this browser session, or until you lock it.'}
+        </div>
+        <footer>
+          <button type="button" class="button ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button class={`button ${removing ? 'danger' : 'primary'}`} disabled={busy}>
+            {busy
+              ? 'Working…'
+              : protecting
+                ? 'Encrypt folder'
+                : removing
+                  ? 'Remove protection'
+                  : 'Unlock folder'}
+          </button>
+        </footer>
+      </form>
     </div>
   );
 }
@@ -761,6 +948,16 @@ function Sessions({
   const collections = active(
     library.collections.filter((item) => item.workspaceId === workspaceId),
   );
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggle = (id: string): void =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const setAllCollapsed = (value: boolean): void =>
+    setCollapsed(value ? new Set(collections.map((item) => item.id)) : new Set());
   return (
     <>
       <PageHeading eyebrow="Saved browser state" title="Sessions">
@@ -770,6 +967,12 @@ function Sessions({
             onClick={() => onLayoutChange('cards')}
           >
             Cards
+          </button>
+          <button
+            class={library.settings.sessionLayout === 'compact' ? 'active' : ''}
+            onClick={() => onLayoutChange('compact')}
+          >
+            Compact
           </button>
           <button
             class={library.settings.sessionLayout === 'list' ? 'active' : ''}
@@ -782,31 +985,29 @@ function Sessions({
           Save current window
         </button>
       </PageHeading>
+      {collections.length > 0 && (
+        <div class="collection-controls">
+          <button onClick={() => setAllCollapsed(false)}>Expand all</button>
+          <button onClick={() => setAllCollapsed(true)}>Collapse all</button>
+        </div>
+      )}
       {collections.length === 0 ? (
         <Empty
           title="No saved sessions"
           copy="Capture the current window or create an empty session."
         />
-      ) : library.settings.sessionLayout === 'list' ? (
-        <div class="session-list">
-          {collections.map((item) => (
-            <SessionListEditor
-              item={item}
-              onSave={onUpdate}
-              onRestore={onRestore}
-              onTrash={() => void onTrash('collection', item.id)}
-            />
-          ))}
-        </div>
       ) : (
-        <div class="card-grid">
+        <div class={`session-groups layout-${library.settings.sessionLayout}`}>
           {collections.map((item) => (
-            <SessionCard
+            <CollectionGroup
               item={item}
+              layout={library.settings.sessionLayout}
+              collapsed={collapsed.has(item.id)}
+              onToggle={() => toggle(item.id)}
+              onSave={onUpdate}
               onRestore={onRestore}
               onEdit={() => onEdit({ kind: 'collection', id: item.id })}
               onTrash={() => void onTrash('collection', item.id)}
-              draggable
               onDragStart={() => onDrag({ kind: 'collection', id: item.id })}
               onDrop={() => void onDrop('collection', item.id)}
             />
@@ -817,13 +1018,98 @@ function Sessions({
   );
 }
 
+function CollectionGroup({
+  item,
+  layout,
+  collapsed,
+  onToggle,
+  onSave,
+  onRestore,
+  onEdit,
+  onTrash,
+  onDragStart,
+  onDrop,
+}: {
+  item: Collection;
+  layout: Settings['sessionLayout'];
+  collapsed: boolean;
+  onToggle: () => void;
+  onSave: (collection: Collection) => Promise<void>;
+  onRestore: (collection: Collection) => Promise<void>;
+  onEdit: () => void;
+  onTrash: () => void;
+  onDragStart: () => void;
+  onDrop: () => void;
+}) {
+  if (layout === 'list')
+    return (
+      <SessionListEditor
+        item={item}
+        collapsed={collapsed}
+        onToggle={onToggle}
+        onSave={onSave}
+        onRestore={onRestore}
+        onTrash={onTrash}
+      />
+    );
+  return (
+    <section
+      class="collection-group"
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={onDrop}
+    >
+      <header class="collection-header" onClick={onToggle}>
+        <div>
+          <button class="collection-chevron" aria-label={collapsed ? 'Expand' : 'Collapse'}>
+            {collapsed ? '›' : '⌄'}
+          </button>
+          <strong>{item.name}</strong>
+          <small>{item.tabs.length} tabs</small>
+        </div>
+        <div onClick={(event) => event.stopPropagation()}>
+          <button onClick={() => void onRestore(item)}>Restore</button>
+          <button onClick={onEdit}>Edit</button>
+          <button class="danger" onClick={onTrash}>
+            Trash
+          </button>
+        </div>
+      </header>
+      {!collapsed && (
+        <div class={layout === 'cards' ? 'saved-tab-cards' : 'saved-tab-compact'}>
+          {item.tabs.length === 0 ? (
+            <p class="empty-collection">This collection has no saved tabs.</p>
+          ) : (
+            item.tabs.map((tab) => (
+              <a class="saved-tab-tile" href={tab.url} target="_blank" rel="noreferrer">
+                <span class="tab-favicon">
+                  {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
+                </span>
+                <span>
+                  <strong>{tab.title}</strong>
+                  <small>{tab.url}</small>
+                </span>
+              </a>
+            ))
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function SessionListEditor({
   item,
+  collapsed,
+  onToggle,
   onSave,
   onRestore,
   onTrash,
 }: {
   item: Collection;
+  collapsed: boolean;
+  onToggle: () => void;
   onSave: (collection: Collection) => Promise<void>;
   onRestore: (collection: Collection) => Promise<void>;
   onTrash: () => void;
@@ -853,12 +1139,15 @@ function SessionListEditor({
   };
   return (
     <article class="session-list-group">
-      <header>
+      <header onClick={onToggle}>
         <div>
+          <button class="collection-chevron" aria-label={collapsed ? 'Expand' : 'Collapse'}>
+            {collapsed ? '›' : '⌄'}
+          </button>
           <strong>{item.name}</strong>
           <small>{tabs.length} tabs</small>
         </div>
-        <div>
+        <div onClick={(event) => event.stopPropagation()}>
           {dirty && <button onClick={() => void save()}>Save changes</button>}
           <button onClick={() => void onRestore(item)}>Restore</button>
           <button class="danger" onClick={onTrash}>
@@ -866,34 +1155,35 @@ function SessionListEditor({
           </button>
         </div>
       </header>
-      {tabs.map((tab) => (
-        <div class="editable-tab-row">
-          <span class="tab-favicon">
-            {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
-          </span>
-          <input
-            aria-label="Tab title"
-            value={tab.title}
-            onInput={(event) => changeTab(tab.id, { title: event.currentTarget.value })}
-          />
-          <input
-            type="url"
-            aria-label="Tab URL"
-            value={tab.url}
-            onInput={(event) => changeTab(tab.id, { url: event.currentTarget.value })}
-          />
-          <button
-            class="tab-delete"
-            aria-label={`Delete ${tab.title}`}
-            onClick={() => {
-              setTabs((current) => removeSavedTab({ ...item, tabs: current }, tab.id).tabs);
-              setDirty(true);
-            }}
-          >
-            ×
-          </button>
-        </div>
-      ))}
+      {!collapsed &&
+        tabs.map((tab) => (
+          <div class="editable-tab-row">
+            <span class="tab-favicon">
+              {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
+            </span>
+            <input
+              aria-label="Tab title"
+              value={tab.title}
+              onInput={(event) => changeTab(tab.id, { title: event.currentTarget.value })}
+            />
+            <input
+              type="url"
+              aria-label="Tab URL"
+              value={tab.url}
+              onInput={(event) => changeTab(tab.id, { url: event.currentTarget.value })}
+            />
+            <button
+              class="tab-delete"
+              aria-label={`Delete ${tab.title}`}
+              onClick={() => {
+                setTabs((current) => removeSavedTab({ ...item, tabs: current }, tab.id).tabs);
+                setDirty(true);
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
     </article>
   );
 }
@@ -1459,7 +1749,7 @@ function EditorDialog({
   const [collectionTabs, setCollectionTabs] = useState(
     target.kind === 'collection' && typedExisting ? (typedExisting as Collection).tabs : [],
   );
-  const folders = active(library.folders);
+  const folders = active(library.folders).filter((folder) => !folder.locked);
 
   const submit = async (event: SubmitEvent): Promise<void> => {
     event.preventDefault();
