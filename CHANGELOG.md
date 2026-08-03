@@ -10,8 +10,6 @@ All notable changes are documented here. This project follows Semantic Versionin
   collections.”
 - Added a prominent JSON-backup warning for unpacked-extension updates and replacements.
 - Removed unnecessary module-preload hints that caused Chromium cross-world resource warnings.
-- Added a current submission checklist and prepared listing copy for Chrome, Firefox, and Edge
-  extension stores.
 
 ## 1.1.0 - 2026-07-26
 

@@ -36,4 +36,4 @@ are described and behave as filters within one workspace, list rows expose compa
 details, unpacked-installation updates carry an explicit backup warning, collection terminology is
 consistent, and generated module-preload hints are disabled. The existing optional new-tab
 dashboard and collection-description fields remain available. Store packages and reviewer source
-must be built from the same tagged commit; follow [docs/STORE-SUBMISSION.md](docs/STORE-SUBMISSION.md).
+must be built from the same tagged commit.
