@@ -5,7 +5,7 @@
 - `entrypoints/background.ts` owns browser events, tab capture, restore execution, context menus,
   shortcuts, and snapshot scheduling.
 - `entrypoints/dashboard/` provides the complete management interface.
-- `entrypoints/popup/` provides fast capture, save-link, recent-session, and dashboard actions.
+- `entrypoints/popup/` provides fast capture, save-link, recent-collection, and dashboard actions.
 - `src/domain/` contains browser-independent models and operations.
 - `src/security/` implements protected-folder key derivation and authenticated encryption.
 - `src/storage/` owns the versioned local library record and the separate optional WebDAV
@@ -18,7 +18,7 @@
 Library
 ├── Folders (optional encrypted container)
 │   └── Workspaces
-│       ├── Collections (saved tab sessions)
+│       ├── Collections (saved browser windows)
 │       ├── Saved links
 │       └── Notes
 └── Settings
@@ -31,6 +31,10 @@ Full-library and per-folder backups use distinct format markers and versions bef
 Folder imports replace only the matching folder identity and reject identifier collisions with
 unrelated content. The version 3 normalizer migrates version 1 and version 2 libraries while
 preserving workspaces and saved content.
+
+The dashboard mirrors this hierarchy: selecting a workspace displays all of its collections and
+their layout controls. Open windows is a separate, non-persistent projection of the browser's live
+windows and tabs. Legacy Sessions and Open tabs hashes normalize to Open windows.
 
 ## Browser boundary
 

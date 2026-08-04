@@ -53,7 +53,7 @@ export const createCollectionFromTabs = (
   const now = Date.now();
   return {
     id: createId(),
-    name: name.trim() || `Session ${new Date(now).toLocaleString()}`,
+    name: name.trim() || `Collection ${new Date(now).toLocaleString()}`,
     workspaceId,
     description: '',
     tags: automatic ? ['recovery'] : [],

@@ -8,7 +8,8 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: 'Tabitha Workspaces',
     short_name: 'Tabitha',
-    description: 'Organize tabs, sessions, links, and notes into private local-first workspaces.',
+    description:
+      'Organize tabs, collections, links, and notes into private local-first workspaces.',
     permissions: ['storage', 'tabs', 'contextMenus', 'unlimitedStorage', 'alarms'],
     optional_host_permissions: ['https://*/*'],
     action: {
@@ -26,7 +27,7 @@ export default defineConfig({
       },
       'save-current-window': {
         suggested_key: { default: 'Alt+Shift+S' },
-        description: 'Save the current window as a session',
+        description: 'Save the current window as a collection',
       },
     },
     browser_specific_settings:

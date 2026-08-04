@@ -21,7 +21,7 @@ export const createId = (): string => crypto.randomUUID();
 
 export const createWorkspace = (
   name = 'My Workspace',
-  description = 'Your default place for saved sessions, links, and notes.',
+  description = 'Your default place for collections, links, and notes.',
   folderId = '',
 ): Workspace => {
   const now = Date.now();

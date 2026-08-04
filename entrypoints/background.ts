@@ -103,7 +103,7 @@ const captureActiveLink = async (requestedWorkspaceId?: string): Promise<SavedLi
 const restoreCollection = async (collectionId: string): Promise<string> => {
   const state = await getLibrary();
   const collection = state.collections.find((item) => item.id === collectionId && !item.trashedAt);
-  if (!collection) throw new Error('That saved session no longer exists.');
+  if (!collection) throw new Error('That collection no longer exists.');
   const current = await browser.tabs.query({});
   const plan = createRestorePlan(
     collection.tabs,

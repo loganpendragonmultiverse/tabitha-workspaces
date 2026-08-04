@@ -2,6 +2,17 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.6.0 - 2026-08-03
+
+- Moved the complete collection browser into each workspace instead of limiting the overview to
+  three recently updated cards.
+- Renamed saved browser sessions to collections throughout the interface, popup, manifest, and
+  documentation.
+- Replaced the overlapping Sessions and Open tabs destinations with a single Open windows view
+  grouped by live browser window.
+- Kept Cards, Compact, List, expand, and collapse controls directly within every workspace.
+- Preserved old `#/sessions` and `#/live` bookmarks by redirecting them to Open windows.
+
 ## 1.5.0 - 2026-08-03
 
 - Added one independently restorable JSON backup per folder while retaining the full-library export.

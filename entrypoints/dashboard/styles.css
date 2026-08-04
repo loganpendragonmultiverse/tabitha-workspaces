@@ -576,17 +576,36 @@ main {
 .stats-grid small {
   color: var(--muted);
 }
-.section-title {
+.collections-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 26px 0 13px;
+  gap: 18px;
+  margin: 26px 0 18px;
 }
-.section-title h2 {
-  margin: 0;
-  font: 700 18px Manrope;
+.collections-heading p {
+  margin: 0 0 5px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
 }
-.section-title button,
+.collections-heading h2 {
+  margin: 0 0 3px;
+  font: 800 25px Manrope;
+  letter-spacing: -0.035em;
+}
+.collections-heading small,
+.window-summary {
+  color: var(--muted);
+}
+.workspace-collections {
+  scroll-margin-top: 24px;
+}
+.window-summary {
+  margin: -20px 0 18px;
+}
 .text-button {
   border: 0;
   background: none;
@@ -624,7 +643,7 @@ main {
   display: flex;
   justify-content: flex-end;
   gap: 5px;
-  margin: -16px 0 14px;
+  margin: -8px 0 14px;
 }
 .collection-controls button,
 .collection-header button {

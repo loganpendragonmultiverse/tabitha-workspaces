@@ -43,7 +43,7 @@ function Popup() {
     }));
     setLibrary(next);
     setRenamingId('');
-    setMessage('Session renamed.');
+    setMessage('Collection renamed.');
   };
 
   return (
@@ -83,14 +83,14 @@ function Popup() {
         </button>
       </section>
       <div class="title">
-        <strong>Recent sessions</strong>
-        <button onClick={() => void send({ type: 'open-dashboard', route: 'sessions' })}>
+        <strong>Recent collections</strong>
+        <button onClick={() => void send({ type: 'open-dashboard', route: 'overview' })}>
           View all
         </button>
       </div>
       <section class="recent">
         {recent.length === 0 ? (
-          <p>No saved sessions yet.</p>
+          <p>No collections yet.</p>
         ) : (
           recent.map((item) => (
             <div class="recent-item">

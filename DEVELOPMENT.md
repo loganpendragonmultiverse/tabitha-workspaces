@@ -38,6 +38,13 @@ fingerprint and uses remote validators for replacement uploads. Divergent edits 
 conflict rather than a timestamp guess. Search can be scoped to workspaces, collections, or URLs,
 and collection collapse state persists for libraries with hundreds of collections.
 
+## Version 1.6 workspace model release
+
+Version 1.6 makes the information architecture match the data model. A workspace owns its complete
+set of saved collections and their Cards, Compact, List, expand, and collapse controls. The live
+Open windows destination is strictly current browser state, grouped by browser window and tab.
+Legacy dashboard hashes continue to resolve so existing bookmarks and popup actions remain safe.
+
 ## Version 1.3 feedback release
 
 Version 1.3 incorporates direct user feedback with a versioned data-model migration. Folders are
