@@ -1,6 +1,6 @@
 # Tabitha Workspaces
 
-Tabitha Workspaces is a private, local-first browser workspace and session manager for Chromium
+Tabitha Workspaces is a private, local-first browser workspace and tab collection manager for Chromium
 and Firefox. It turns open tabs, research links, and connected notes into durable workspaces
 without requiring an account or transmitting browsing data.
 
@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.5.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.5.0/tabitha-workspaces-1.5.0-chrome.zip)
-- [Download Tabitha Workspaces 1.5.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.5.0/tabitha-workspaces-1.5.0-firefox.zip)
+- [Download Tabitha Workspaces 1.6.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.6.0/tabitha-workspaces-1.6.0-chrome.zip)
+- [Download Tabitha Workspaces 1.6.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.6.0/tabitha-workspaces-1.6.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -20,21 +20,21 @@ After downloading, follow the short browser-specific steps in
 
 - Uses top-level folders as isolated containers for one or more workspaces.
 - Optionally password-protects any top-level folder with PBKDF2-derived AES-256-GCM encryption.
-- Captures the current browser window as a restorable session.
-- Restores sessions into a new or existing window and optionally skips duplicate URLs.
-- Shows open tabs across browser windows and refreshes the view automatically.
+- Captures the current browser window as a restorable collection.
+- Restores collections into a new or existing window and optionally skips duplicate URLs.
+- Shows current browser windows and their open tabs in a separate live view that refreshes automatically.
 - Saves individual links with descriptions and tags.
 - Stores notes with `[[internal links]]` and backlink counts.
-- Searches workspace names, folders, sessions, saved tabs, URLs, notes, and tags, with direct
+- Searches workspace names, folders, collections, saved tabs, URLs, notes, and tags, with direct
   Workspaces, Collections, and URLs filters.
-- Soft-deletes workspaces, folders, sessions, links, and notes into a recycle bin.
-- Reorders workspaces and sessions with drag and drop.
-- Moves sessions between workspaces by dragging them onto the workspace sidebar or editing them.
+- Soft-deletes workspaces, folders, collections, links, and notes into a recycle bin.
+- Reorders workspaces and collections with drag and drop.
+- Moves collections between workspaces by dragging them onto the workspace sidebar or editing them.
 - Switches saved collections between card, compact, and editable tab-row layouts.
 - Expands or collapses individual collections by clicking their headings, with persistent
   expand-all and collapse-all controls.
 - Migrates existing version 1 libraries into a default top-level folder without losing workspaces or saved content.
-- Renames recent sessions directly from the toolbar popup.
+- Renames recent collections directly from the toolbar popup.
 - Optionally opens the dashboard when a new browser tab is created.
 - Creates optional replacement-style recovery snapshots on a user-selected interval.
 - Imports and exports a complete, versioned JSON backup or one independently restorable JSON file
@@ -50,7 +50,7 @@ After downloading, follow the short browser-specific steps in
 1. Download the package for your browser from the latest GitHub release.
 2. Follow [INSTALLATION.md](INSTALLATION.md) to load the package locally.
 3. Select **Save window** from the toolbar popup.
-4. Open the workspace dashboard to name, tag, restore, or reorganize the saved session.
+4. Open the workspace dashboard to name, tag, restore, or reorganize the saved collection.
 5. Export a JSON backup from **Settings** whenever you want a portable copy.
 
 ## Privacy
@@ -61,13 +61,13 @@ Protected-folder contents are encrypted before storage, export, or WebDAV synchr
 names and descriptions remain visible so a locked folder can be identified.
 The extension requests only the following permissions:
 
-| Permission         | Why it is needed                                                               |
-| ------------------ | ------------------------------------------------------------------------------ |
-| `storage`          | Save the local workspace library and preferences.                              |
-| `tabs`             | Read tab titles and URLs when the user captures or monitors browser windows.   |
-| `contextMenus`     | Provide Save page, Save window, and Open Tabitha actions.                      |
-| `unlimitedStorage` | Prevent larger session and note libraries from being evicted by normal quotas. |
-| `alarms`           | Schedule optional local recovery snapshots.                                    |
+| Permission         | Why it is needed                                                                  |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `storage`          | Save the local workspace library and preferences.                                 |
+| `tabs`             | Read tab titles and URLs when the user captures or monitors browser windows.      |
+| `contextMenus`     | Provide Save page, Save window, and Open Tabitha actions.                         |
+| `unlimitedStorage` | Prevent larger collection and note libraries from being evicted by normal quotas. |
+| `alarms`           | Schedule optional local recovery snapshots.                                       |
 
 When WebDAV sync is enabled, Tabitha asks separately for access to only the HTTPS server origin
 selected by the user. WebDAV credentials stay in local extension storage and are not included in
@@ -105,8 +105,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.5.0-chrome.zip`
-- `.output/tabitha-workspaces-1.5.0-firefox.zip`
+- `.output/tabitha-workspaces-1.6.0-chrome.zip`
+- `.output/tabitha-workspaces-1.6.0-firefox.zip`
 
 ## Architecture
 

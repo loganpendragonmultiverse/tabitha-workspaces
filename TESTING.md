@@ -14,6 +14,7 @@ cross-world preload warnings reported by Chromium.
 
 Before release, also load both unpacked output directories and verify the dashboard, popup, capture,
 restore, full-library and per-folder JSON export/import, protected-folder backup encryption, scoped
-search, persistent collection collapse state, optional new-tab behavior, top-level folder migration,
-editable tab rows, WebDAV permission prompt, and an intentional sync conflict. Store review and
-signing occur separately from the GitHub release.
+search, all workspace collections in each layout, persistent collection collapse state, live tabs
+grouped under the correct browser windows, legacy `#/sessions` and `#/live` redirects, optional
+new-tab behavior, top-level folder migration, editable tab rows, WebDAV permission prompt, and an
+intentional sync conflict. Store review and signing occur separately from the GitHub release.

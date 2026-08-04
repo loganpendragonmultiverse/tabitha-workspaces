@@ -26,6 +26,7 @@ import {
   searchLibrary,
   updateSavedTab,
 } from '../../src/domain/library';
+import { resolveDashboardView, type DashboardView } from '../../src/domain/navigation';
 import type {
   BaseEntity,
   Collection,
@@ -50,7 +51,7 @@ import {
   unlockFolder,
 } from '../../src/storage/libraryStore';
 
-type View = 'overview' | 'sessions' | 'links' | 'notes' | 'live' | 'trash' | 'settings';
+type View = DashboardView;
 type EditableKind = 'workspace' | 'folder' | 'collection' | 'link' | 'note';
 interface EditorTarget {
   kind: EditableKind;
@@ -58,12 +59,13 @@ interface EditorTarget {
 }
 type PasswordAction = { folder: Folder; mode: 'protect' | 'unlock' | 'remove' };
 
-const NAV: { id: View; label: string; icon: string }[] = [
-  { id: 'overview', label: 'Overview', icon: '⌂' },
-  { id: 'sessions', label: 'Sessions', icon: '▣' },
+const PRIMARY_NAV: { id: View; label: string; icon: string }[] = [
+  { id: 'overview', label: 'Workspace', icon: '⌂' },
+  { id: 'windows', label: 'Open windows', icon: '◎' },
   { id: 'links', label: 'Saved links', icon: '↗' },
   { id: 'notes', label: 'Notes', icon: '✎' },
-  { id: 'live', label: 'Open tabs', icon: '◎' },
+];
+const UTILITY_NAV: { id: View; label: string; icon: string }[] = [
   { id: 'trash', label: 'Recycle bin', icon: '♲' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
 ];
@@ -103,10 +105,7 @@ const fileSafeName = (value: string): string =>
 export function App() {
   const [library, setLocalLibrary] = useState<LibraryState | null>(null);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState('');
-  const [view, setView] = useState<View>(() => {
-    const route = location.hash.replace('#/', '') as View;
-    return NAV.some((item) => item.id === route) ? route : 'overview';
-  });
+  const [view, setView] = useState<View>(() => resolveDashboardView(location.hash));
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
   const [editor, setEditor] = useState<EditorTarget | null>(null);
@@ -128,11 +127,11 @@ export function App() {
 
   useEffect(() => {
     location.hash = `/${view}`;
-    if (view === 'live') void refreshLiveTabs();
+    if (view === 'windows') void refreshLiveTabs();
   }, [view]);
 
   useEffect(() => {
-    if (view !== 'live') return;
+    if (view !== 'windows') return;
     const interval = window.setInterval(() => void refreshLiveTabs(), 3000);
     return () => window.clearInterval(interval);
   }, [view]);
@@ -167,8 +166,12 @@ export function App() {
 
   const captureWindow = async (): Promise<void> => {
     const response = await send({ type: 'capture-window', workspaceId: selectedWorkspaceId });
-    setToast(response.ok ? `Saved ${response.collection?.tabs.length ?? 0} tabs.` : response.error);
-    if (response.ok) setView('sessions');
+    setToast(
+      response.ok
+        ? `Saved ${response.collection?.tabs.length ?? 0} tabs as a collection.`
+        : response.error,
+    );
+    if (response.ok) setView('overview');
   };
 
   const restoreCollection = async (collection: Collection): Promise<void> => {
@@ -178,7 +181,7 @@ export function App() {
     )
       return;
     const response = await send({ type: 'restore-collection', collectionId: collection.id });
-    setToast(response.ok ? (response.message ?? 'Session restored.') : response.error);
+    setToast(response.ok ? (response.message ?? 'Collection restored.') : response.error);
   };
 
   const trash = async (kind: EntityKind, id: string): Promise<void> => {
@@ -233,12 +236,12 @@ export function App() {
       }),
     });
     setDragged(null);
-    setToast('Session moved to the selected workspace.');
+    setToast('Collection moved to the selected workspace.');
   };
 
   const openSearchResult = (kind: string, workspaceId?: string): void => {
     if (workspaceId) setSelectedWorkspaceId(workspaceId);
-    if (kind === 'collection' || kind === 'tab') setView('sessions');
+    if (kind === 'collection' || kind === 'tab') setView('overview');
     else if (kind === 'link') setView('links');
     else if (kind === 'note') setView('notes');
     else setView('overview');
@@ -312,11 +315,13 @@ export function App() {
           </div>
         </div>
         <nav class="primary-nav" aria-label="Main navigation">
-          {NAV.slice(0, 5).map((item) => (
+          {PRIMARY_NAV.map((item) => (
             <button class={view === item.id ? 'active' : ''} onClick={() => setView(item.id)}>
               <span aria-hidden="true">{item.icon}</span>
               {item.label}
-              {item.id === 'live' && <em>{liveTabs.length || ''}</em>}
+              {item.id === 'windows' && (
+                <em>{new Set(liveTabs.map((tab) => tab.windowId)).size || ''}</em>
+              )}
             </button>
           ))}
         </nav>
@@ -433,7 +438,7 @@ export function App() {
           })}
         </div>
         <nav class="utility-nav">
-          {NAV.slice(5).map((item) => (
+          {UTILITY_NAV.map((item) => (
             <button class={view === item.id ? 'active' : ''} onClick={() => setView(item.id)}>
               <span aria-hidden="true">{item.icon}</span>
               {item.label}
@@ -505,20 +510,6 @@ export function App() {
               onView={setView}
               onRestore={restoreCollection}
               onEdit={setEditor}
-              onDismissWelcome={() =>
-                void persist({
-                  ...library,
-                  settings: { ...library.settings, showWelcomeBanner: false },
-                })
-              }
-            />
-          )}
-          {view === 'sessions' && (
-            <Sessions
-              library={library}
-              workspaceId={selectedWorkspaceId}
-              onRestore={restoreCollection}
-              onEdit={setEditor}
               onTrash={trash}
               onCapture={captureWindow}
               onDrag={setDragged}
@@ -543,6 +534,12 @@ export function App() {
                   settings: { ...library.settings, collapsedCollectionIds },
                 })
               }
+              onDismissWelcome={() =>
+                void persist({
+                  ...library,
+                  settings: { ...library.settings, showWelcomeBanner: false },
+                })
+              }
             />
           )}
           {view === 'links' && (
@@ -561,7 +558,7 @@ export function App() {
               onTrash={trash}
             />
           )}
-          {view === 'live' && (
+          {view === 'windows' && (
             <LiveTabs tabs={liveTabs} onRefresh={refreshLiveTabs} onCapture={captureWindow} />
           )}
           {view === 'trash' && (
@@ -745,7 +742,7 @@ function PasswordDialog({
           {protecting
             ? 'Tabitha encrypts everything inside this folder with AES-256-GCM. There is no password recovery.'
             : removing
-              ? 'This does not delete any workspaces, sessions, links, or notes.'
+              ? 'This does not delete any workspaces, collections, links, or notes.'
               : 'The folder stays unlocked only for this browser session, or until you lock it.'}
         </div>
         <footer>
@@ -793,6 +790,13 @@ function Overview({
   onView,
   onRestore,
   onEdit,
+  onTrash,
+  onCapture,
+  onDrag,
+  onDrop,
+  onUpdate,
+  onLayoutChange,
+  onCollapsedChange,
   onDismissWelcome,
 }: {
   library: LibraryState;
@@ -800,6 +804,13 @@ function Overview({
   onView: (view: View) => void;
   onRestore: (item: Collection) => Promise<void>;
   onEdit: (target: EditorTarget) => void;
+  onTrash: (kind: EntityKind, id: string) => Promise<void>;
+  onCapture: () => Promise<void>;
+  onDrag: (value: { kind: 'collection'; id: string }) => void;
+  onDrop: (kind: 'collection', id: string) => Promise<void>;
+  onUpdate: (collection: Collection) => Promise<void>;
+  onLayoutChange: (layout: Settings['sessionLayout']) => void;
+  onCollapsedChange: (ids: string[]) => void;
   onDismissWelcome: () => void;
 }) {
   const workspace = library.workspaces.find((item) => item.id === workspaceId);
@@ -829,11 +840,18 @@ function Overview({
             <span class="hero-kicker">Your browser, organized</span>
             <h2>Pick up where you left off.</h2>
             <p>
-              Sessions, research links, and connected notes stay private and ready whenever you need
-              them.
+              Collections, research links, and connected notes stay private and ready whenever you
+              need them.
             </p>
-            <button class="button light" onClick={() => onView('sessions')}>
-              Browse saved sessions →
+            <button
+              class="button light"
+              onClick={() =>
+                document
+                  .getElementById('workspace-collections')
+                  ?.scrollIntoView({ behavior: 'smooth' })
+              }
+            >
+              Browse collections ↓
             </button>
           </div>
           <div class="orbit" aria-hidden="true">
@@ -845,12 +863,12 @@ function Overview({
         </section>
       )}
       <section class="stats-grid">
-        <button onClick={() => onView('sessions')}>
+        <button onClick={() => document.getElementById('workspace-collections')?.scrollIntoView()}>
           <span>▣</span>
           <strong>{collections.length}</strong>
-          <small>Saved sessions</small>
+          <small>Collections</small>
         </button>
-        <button onClick={() => onView('sessions')}>
+        <button onClick={() => document.getElementById('workspace-collections')?.scrollIntoView()}>
           <span>□</span>
           <strong>{tabs}</strong>
           <small>Saved tabs</small>
@@ -866,48 +884,20 @@ function Overview({
           <small>Connected notes</small>
         </button>
       </section>
-      <SectionTitle
-        title="Recently updated collections"
-        action="View all"
-        onAction={() => onView('sessions')}
+      <Collections
+        library={library}
+        workspaceId={workspaceId}
+        onRestore={onRestore}
+        onEdit={onEdit}
+        onTrash={onTrash}
+        onCapture={onCapture}
+        onDrag={onDrag}
+        onDrop={onDrop}
+        onUpdate={onUpdate}
+        onLayoutChange={onLayoutChange}
+        onCollapsedChange={onCollapsedChange}
       />
-      {collections.length === 0 ? (
-        <Empty
-          title="No sessions yet"
-          copy="Save your current browser window to create the first one."
-        />
-      ) : (
-        <div class="card-grid">
-          {[...collections]
-            .sort((a, b) => b.updatedAt - a.updatedAt)
-            .slice(0, 3)
-            .map((item) => (
-              <SessionCard
-                item={item}
-                onRestore={onRestore}
-                onEdit={() => onEdit({ kind: 'collection', id: item.id })}
-              />
-            ))}
-        </div>
-      )}
     </>
-  );
-}
-
-function SectionTitle({
-  title,
-  action,
-  onAction,
-}: {
-  title: string;
-  action?: string;
-  onAction?: () => void;
-}) {
-  return (
-    <div class="section-title">
-      <h2>{title}</h2>
-      {action && <button onClick={onAction}>{action} →</button>}
-    </div>
   );
 }
 
@@ -921,88 +911,7 @@ function Empty({ title, copy }: { title: string; copy: string }) {
   );
 }
 
-function SessionCard({
-  item,
-  onRestore,
-  onEdit,
-  onTrash,
-  draggable,
-  onDragStart,
-  onDrop,
-  list = false,
-}: {
-  item: Collection;
-  onRestore: (item: Collection) => Promise<void>;
-  onEdit: () => void;
-  onTrash?: () => void;
-  draggable?: boolean;
-  onDragStart?: () => void;
-  onDrop?: () => void;
-  list?: boolean;
-}) {
-  const primaryTab = item.tabs[0];
-  return (
-    <article
-      class={list ? 'session-card session-list-row' : 'session-card'}
-      draggable={draggable}
-      onDragStart={onDragStart}
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={onDrop}
-    >
-      <div class="card-top">
-        <span class={item.automatic ? 'pill recovery' : 'pill'}>
-          {item.automatic ? 'Recovery' : `${item.tabs.length} tabs`}
-        </span>
-        <button class="icon-button" onClick={onEdit} aria-label={`Edit ${item.name}`}>
-          •••
-        </button>
-      </div>
-      <div class="favicon-stack">
-        {item.tabs.slice(0, 5).map((tab, index) => (
-          <span style={{ transform: `translateX(${index * 22}px)` }}>
-            {tab.faviconUrl ? (
-              <img src={tab.faviconUrl} alt="" />
-            ) : (
-              tab.title.slice(0, 1).toUpperCase()
-            )}
-          </span>
-        ))}
-      </div>
-      <div class="session-details">
-        <h3>{item.name}</h3>
-        {list && primaryTab && <small class="session-url">{primaryTab.url}</small>}
-        <p>
-          {item.description ||
-            item.tabs
-              .slice(0, 3)
-              .map((tab) => tab.title)
-              .join(' · ') ||
-            'Empty session'}
-        </p>
-      </div>
-      <div class="tags">
-        {item.tags.map((tag) => (
-          <span>#{tag}</span>
-        ))}
-      </div>
-      <footer>
-        <small>Updated {timeLabel(item.updatedAt)}</small>
-        <div>
-          <button class="text-button" onClick={() => void onRestore(item)}>
-            Restore
-          </button>
-          {onTrash && (
-            <button class="text-button danger" onClick={onTrash}>
-              Trash
-            </button>
-          )}
-        </div>
-      </footer>
-    </article>
-  );
-}
-
-function Sessions({
+function Collections({
   library,
   workspaceId,
   onRestore,
@@ -1044,32 +953,42 @@ function Sessions({
     onCollapsedChange([...next]);
   };
   return (
-    <>
-      <PageHeading eyebrow="Saved browser state" title="Sessions">
-        <div class="view-toggle" aria-label="Session layout">
-          <button
-            class={library.settings.sessionLayout === 'cards' ? 'active' : ''}
-            onClick={() => onLayoutChange('cards')}
-          >
-            Cards
-          </button>
-          <button
-            class={library.settings.sessionLayout === 'compact' ? 'active' : ''}
-            onClick={() => onLayoutChange('compact')}
-          >
-            Compact
-          </button>
-          <button
-            class={library.settings.sessionLayout === 'list' ? 'active' : ''}
-            onClick={() => onLayoutChange('list')}
-          >
-            List
+    <section id="workspace-collections" class="workspace-collections">
+      <div class="collections-heading">
+        <div>
+          <p>Saved browser state</p>
+          <h2>Collections</h2>
+          <small>
+            {collections.length} {collections.length === 1 ? 'collection' : 'collections'} in this
+            workspace
+          </small>
+        </div>
+        <div class="heading-actions">
+          <div class="view-toggle" aria-label="Collection layout">
+            <button
+              class={library.settings.sessionLayout === 'cards' ? 'active' : ''}
+              onClick={() => onLayoutChange('cards')}
+            >
+              Cards
+            </button>
+            <button
+              class={library.settings.sessionLayout === 'compact' ? 'active' : ''}
+              onClick={() => onLayoutChange('compact')}
+            >
+              Compact
+            </button>
+            <button
+              class={library.settings.sessionLayout === 'list' ? 'active' : ''}
+              onClick={() => onLayoutChange('list')}
+            >
+              List
+            </button>
+          </div>
+          <button class="button primary" onClick={() => void onCapture()}>
+            Save current window
           </button>
         </div>
-        <button class="button primary" onClick={() => void onCapture()}>
-          Save current window
-        </button>
-      </PageHeading>
+      </div>
       {collections.length > 0 && (
         <div class="collection-controls">
           <button onClick={() => setAllCollapsed(false)}>Expand all</button>
@@ -1078,8 +997,8 @@ function Sessions({
       )}
       {collections.length === 0 ? (
         <Empty
-          title="No saved sessions"
-          copy="Capture the current window or create an empty session."
+          title="No collections yet"
+          copy="Capture the current window or create an empty collection."
         />
       ) : (
         <div class={`session-groups layout-${library.settings.sessionLayout}`}>
@@ -1099,7 +1018,7 @@ function Sessions({
           ))}
         </div>
       )}
-    </>
+    </section>
   );
 }
 
@@ -1408,7 +1327,7 @@ function LiveTabs({
   tabs.forEach((tab) => windows.set(tab.windowId, [...(windows.get(tab.windowId) ?? []), tab]));
   return (
     <>
-      <PageHeading eyebrow="Right now" title={`${tabs.length} open tabs`}>
+      <PageHeading eyebrow="Current browser state" title="Open windows">
         <button class="button ghost" onClick={() => void onRefresh()}>
           Refresh
         </button>
@@ -1416,6 +1335,12 @@ function LiveTabs({
           Save current window
         </button>
       </PageHeading>
+      <p class="window-summary">
+        {windows.size} {windows.size === 1 ? 'window' : 'windows'} · {tabs.length} open tabs
+      </p>
+      {tabs.length === 0 && (
+        <Empty title="No open tabs found" copy="Open a browser tab, then refresh this view." />
+      )}
       {[...windows.values()].map((windowTabs, index) => (
         <section class="window-card">
           <div class="window-title">
@@ -1425,9 +1350,11 @@ function LiveTabs({
           {windowTabs.map((tab) => (
             <button
               class="live-tab"
-              onClick={() =>
-                tab.id !== undefined && void browser.tabs.update(tab.id, { active: true })
-              }
+              onClick={() => {
+                if (tab.id !== undefined) void browser.tabs.update(tab.id, { active: true });
+                if (tab.windowId !== undefined)
+                  void browser.windows.update(tab.windowId, { focused: true });
+              }}
             >
               <span>{tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : '□'}</span>
               <div>
@@ -1604,7 +1531,7 @@ function SettingsView({
           </label>
         </section>
         <section class="settings-card">
-          <h2>Session restore</h2>
+          <h2>Collection restore</h2>
           <p>Control how saved browser windows are reopened.</p>
           <Toggle
             label="Confirm before restoring"
