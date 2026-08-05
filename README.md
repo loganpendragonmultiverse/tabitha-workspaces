@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.6.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.6.0/tabitha-workspaces-1.6.0-chrome.zip)
-- [Download Tabitha Workspaces 1.6.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.6.0/tabitha-workspaces-1.6.0-firefox.zip)
+- [Download Tabitha Workspaces 1.7.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.7.0/tabitha-workspaces-1.7.0-chrome.zip)
+- [Download Tabitha Workspaces 1.7.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.7.0/tabitha-workspaces-1.7.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -23,6 +23,8 @@ After downloading, follow the short browser-specific steps in
 - Captures the current browser window as a restorable collection.
 - Restores collections into a new or existing window and optionally skips duplicate URLs.
 - Shows current browser windows and their open tabs in a separate live view that refreshes automatically.
+- Keeps a clear Workspaces/Open windows switch at the top of the dashboard and lets live browser
+  windows collapse individually or together.
 - Saves individual links with descriptions and tags.
 - Stores notes with `[[internal links]]` and backlink counts.
 - Searches workspace names, folders, collections, saved tabs, URLs, notes, and tags, with direct
@@ -105,8 +107,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.6.0-chrome.zip`
-- `.output/tabitha-workspaces-1.6.0-firefox.zip`
+- `.output/tabitha-workspaces-1.7.0-chrome.zip`
+- `.output/tabitha-workspaces-1.7.0-firefox.zip`
 
 ## Architecture
 

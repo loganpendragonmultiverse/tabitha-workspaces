@@ -7,6 +7,7 @@ import type {
   LiveTab,
 } from '../../src/browser/messages';
 import { createId } from '../../src/domain/defaults';
+import { applyWorkspaceLayout } from '../../src/domain/collectionView';
 import {
   mergeFolderExport,
   parseFolderExport,
@@ -26,6 +27,7 @@ import {
   searchLibrary,
   updateSavedTab,
 } from '../../src/domain/library';
+import { groupLiveTabs, setCollapsedWindowKeys } from '../../src/domain/liveWindows';
 import { resolveDashboardView, type DashboardView } from '../../src/domain/navigation';
 import type {
   BaseEntity,
@@ -60,8 +62,6 @@ interface EditorTarget {
 type PasswordAction = { folder: Folder; mode: 'protect' | 'unlock' | 'remove' };
 
 const PRIMARY_NAV: { id: View; label: string; icon: string }[] = [
-  { id: 'overview', label: 'Workspace', icon: '⌂' },
-  { id: 'windows', label: 'Open windows', icon: '◎' },
   { id: 'links', label: 'Saved links', icon: '↗' },
   { id: 'notes', label: 'Notes', icon: '✎' },
 ];
@@ -110,6 +110,7 @@ export function App() {
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
   const [editor, setEditor] = useState<EditorTarget | null>(null);
   const [liveTabs, setLiveTabs] = useState<LiveTab[]>([]);
+  const [collapsedLiveWindowKeys, setCollapsedLiveWindowKeys] = useState<string[]>([]);
   const [toast, setToast] = useState('');
   const [passwordAction, setPasswordAction] = useState<PasswordAction | null>(null);
   const [dragged, setDragged] = useState<{ kind: 'workspace' | 'collection'; id: string } | null>(
@@ -314,14 +315,31 @@ export function App() {
             <small>Workspaces</small>
           </div>
         </div>
+        <nav class="mode-switch" aria-label="Saved and live browser state">
+          <button
+            class={view === 'windows' ? '' : 'active'}
+            aria-pressed={view !== 'windows'}
+            onClick={() => setView('overview')}
+          >
+            <span aria-hidden="true">⌂</span>
+            <strong>Workspaces</strong>
+            <small>Saved collections</small>
+          </button>
+          <button
+            class={view === 'windows' ? 'active' : ''}
+            aria-pressed={view === 'windows'}
+            onClick={() => setView('windows')}
+          >
+            <span aria-hidden="true">◎</span>
+            <strong>Open windows</strong>
+            <small>{new Set(liveTabs.map((tab) => tab.windowId)).size || 'Live'}</small>
+          </button>
+        </nav>
         <nav class="primary-nav" aria-label="Main navigation">
           {PRIMARY_NAV.map((item) => (
             <button class={view === item.id ? 'active' : ''} onClick={() => setView(item.id)}>
               <span aria-hidden="true">{item.icon}</span>
               {item.label}
-              {item.id === 'windows' && (
-                <em>{new Set(liveTabs.map((tab) => tab.windowId)).size || ''}</em>
-              )}
             </button>
           ))}
         </nav>
@@ -525,7 +543,12 @@ export function App() {
               onLayoutChange={(sessionLayout) =>
                 void persist({
                   ...library,
-                  settings: { ...library.settings, sessionLayout },
+                  settings: applyWorkspaceLayout(
+                    library.settings,
+                    library.collections,
+                    selectedWorkspaceId,
+                    sessionLayout,
+                  ),
                 })
               }
               onCollapsedChange={(collapsedCollectionIds) =>
@@ -559,7 +582,13 @@ export function App() {
             />
           )}
           {view === 'windows' && (
-            <LiveTabs tabs={liveTabs} onRefresh={refreshLiveTabs} onCapture={captureWindow} />
+            <LiveTabs
+              tabs={liveTabs}
+              collapsedWindowKeys={collapsedLiveWindowKeys}
+              onCollapsedChange={setCollapsedLiveWindowKeys}
+              onRefresh={refreshLiveTabs}
+              onCapture={captureWindow}
+            />
           )}
           {view === 'trash' && (
             <Trash
@@ -968,18 +997,21 @@ function Collections({
             <button
               class={library.settings.sessionLayout === 'cards' ? 'active' : ''}
               onClick={() => onLayoutChange('cards')}
+              title="Show cards and expand this workspace's collections"
             >
               Cards
             </button>
             <button
               class={library.settings.sessionLayout === 'compact' ? 'active' : ''}
               onClick={() => onLayoutChange('compact')}
+              title="Show compact tiles and expand this workspace's collections"
             >
               Compact
             </button>
             <button
               class={library.settings.sessionLayout === 'list' ? 'active' : ''}
               onClick={() => onLayoutChange('list')}
+              title="Show editable rows and expand this workspace's collections"
             >
               List
             </button>
@@ -1053,6 +1085,7 @@ function CollectionGroup({
         onToggle={onToggle}
         onSave={onSave}
         onRestore={onRestore}
+        onEdit={onEdit}
         onTrash={onTrash}
       />
     );
@@ -1109,6 +1142,7 @@ function SessionListEditor({
   onToggle,
   onSave,
   onRestore,
+  onEdit,
   onTrash,
 }: {
   item: Collection;
@@ -1116,6 +1150,7 @@ function SessionListEditor({
   onToggle: () => void;
   onSave: (collection: Collection) => Promise<void>;
   onRestore: (collection: Collection) => Promise<void>;
+  onEdit: () => void;
   onTrash: () => void;
 }) {
   const [tabs, setTabs] = useState(item.tabs);
@@ -1154,6 +1189,7 @@ function SessionListEditor({
         <div onClick={(event) => event.stopPropagation()}>
           {dirty && <button onClick={() => void save()}>Save changes</button>}
           <button onClick={() => void onRestore(item)}>Restore</button>
+          <button onClick={onEdit}>Edit</button>
           <button class="danger" onClick={onTrash}>
             Trash
           </button>
@@ -1316,15 +1352,28 @@ function Notes({
 
 function LiveTabs({
   tabs,
+  collapsedWindowKeys,
+  onCollapsedChange,
   onRefresh,
   onCapture,
 }: {
   tabs: LiveTab[];
+  collapsedWindowKeys: string[];
+  onCollapsedChange: (keys: string[]) => void;
   onRefresh: () => Promise<void>;
   onCapture: () => Promise<void>;
 }) {
-  const windows = new Map<number | undefined, LiveTab[]>();
-  tabs.forEach((tab) => windows.set(tab.windowId, [...(windows.get(tab.windowId) ?? []), tab]));
+  const windows = groupLiveTabs(tabs);
+  const collapsed = new Set(collapsedWindowKeys);
+  const toggleWindow = (key: string): void => {
+    onCollapsedChange(
+      collapsed.has(key)
+        ? collapsedWindowKeys.filter((item) => item !== key)
+        : [...collapsedWindowKeys, key],
+    );
+  };
+  const setAllCollapsed = (value: boolean): void =>
+    onCollapsedChange(setCollapsedWindowKeys(collapsedWindowKeys, windows, value));
   return (
     <>
       <PageHeading eyebrow="Current browser state" title="Open windows">
@@ -1336,37 +1385,61 @@ function LiveTabs({
         </button>
       </PageHeading>
       <p class="window-summary">
-        {windows.size} {windows.size === 1 ? 'window' : 'windows'} · {tabs.length} open tabs
+        {windows.length} {windows.length === 1 ? 'window' : 'windows'} · {tabs.length} open tabs
       </p>
+      {windows.length > 0 && (
+        <div class="window-controls">
+          <button onClick={() => setAllCollapsed(false)}>Expand all</button>
+          <button onClick={() => setAllCollapsed(true)}>Collapse all</button>
+        </div>
+      )}
       {tabs.length === 0 && (
         <Empty title="No open tabs found" copy="Open a browser tab, then refresh this view." />
       )}
-      {[...windows.values()].map((windowTabs, index) => (
-        <section class="window-card">
-          <div class="window-title">
-            <h2>Window {index + 1}</h2>
-            <span>{windowTabs.length} tabs</span>
-          </div>
-          {windowTabs.map((tab) => (
+      {windows.map((windowGroup, index) => {
+        const isCollapsed = collapsed.has(windowGroup.key);
+        const panelId = `live-window-${windowGroup.key.replace(/[^a-z0-9-]/gi, '-')}`;
+        return (
+          <section class={`window-card${isCollapsed ? ' collapsed' : ''}`}>
             <button
-              class="live-tab"
-              onClick={() => {
-                if (tab.id !== undefined) void browser.tabs.update(tab.id, { active: true });
-                if (tab.windowId !== undefined)
-                  void browser.windows.update(tab.windowId, { focused: true });
-              }}
+              class="window-title"
+              aria-expanded={!isCollapsed}
+              aria-controls={panelId}
+              onClick={() => toggleWindow(windowGroup.key)}
             >
-              <span>{tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : '□'}</span>
               <div>
-                <strong>{tab.title}</strong>
-                <small>{tab.url}</small>
+                <span class="window-chevron" aria-hidden="true">
+                  {isCollapsed ? '›' : '⌄'}
+                </span>
+                <h2>Window {index + 1}</h2>
               </div>
-              {tab.pinned && <em>Pinned</em>}
-              {tab.active && <i>Active</i>}
+              <span>{windowGroup.tabs.length} tabs</span>
             </button>
-          ))}
-        </section>
-      ))}
+            {!isCollapsed && (
+              <div id={panelId}>
+                {windowGroup.tabs.map((tab) => (
+                  <button
+                    class="live-tab"
+                    onClick={() => {
+                      if (tab.id !== undefined) void browser.tabs.update(tab.id, { active: true });
+                      if (tab.windowId !== undefined)
+                        void browser.windows.update(tab.windowId, { focused: true });
+                    }}
+                  >
+                    <span>{tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : '□'}</span>
+                    <div>
+                      <strong>{tab.title}</strong>
+                      <small>{tab.url}</small>
+                    </div>
+                    {tab.pinned && <em>Pinned</em>}
+                    {tab.active && <i>Active</i>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </>
   );
 }

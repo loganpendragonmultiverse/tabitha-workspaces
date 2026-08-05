@@ -45,6 +45,15 @@ set of saved collections and their Cards, Compact, List, expand, and collapse co
 Open windows destination is strictly current browser state, grouped by browser window and tab.
 Legacy dashboard hashes continue to resolve so existing bookmarks and popup actions remain safe.
 
+## Version 1.7 navigation consistency release
+
+Version 1.7 makes the saved/live distinction a prominent two-mode switch without changing the
+library schema. Live browser windows gain the same individual and all-at-once collapse behavior as
+saved collections, with collapse state retained only for the current dashboard session because
+browser window IDs are ephemeral. List layout keeps direct tab editing and also exposes the full
+collection editor. Selecting a collection layout expands that workspace's collections so the
+visual change cannot be hidden behind collapsed headings.
+
 ## Version 1.3 feedback release
 
 Version 1.3 incorporates direct user feedback with a versioned data-model migration. Folders are

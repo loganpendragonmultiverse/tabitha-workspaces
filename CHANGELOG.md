@@ -2,6 +2,15 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.7.0 - 2026-08-04
+
+- Added a prominent Workspaces/Open windows switch at the top of the dashboard sidebar.
+- Made live browser-window groups individually collapsible and added Expand all and Collapse all
+  controls for current windows.
+- Added the collection-level Edit action to List layout while retaining direct saved-tab editing.
+- Made Cards, Compact, and List changes expand the current workspace's collections so the selected
+  layout is immediately visible.
+
 ## 1.6.0 - 2026-08-03
 
 - Moved the complete collection browser into each workspace instead of limiting the overview to
