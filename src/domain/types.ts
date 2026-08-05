@@ -74,6 +74,7 @@ export interface Note extends BaseEntity {
 export type Theme = 'system' | 'light' | 'dark';
 export type Density = 'comfortable' | 'compact';
 export type SessionLayout = 'cards' | 'compact' | 'list';
+export type CollectionSortMode = 'custom' | 'newest' | 'oldest' | 'alphabetical';
 export type SearchScope = 'all' | 'workspace' | 'collection' | 'url';
 
 export interface Settings {
@@ -86,6 +87,7 @@ export interface Settings {
   automaticSnapshots: boolean;
   snapshotIntervalMinutes: number;
   sessionLayout: SessionLayout;
+  collectionSortByWorkspace: Record<string, CollectionSortMode>;
   collapsedCollectionIds: string[];
   showWelcomeBanner: boolean;
   openDashboardOnNewTab: boolean;

@@ -1,4 +1,5 @@
 import { createId, defaultSettings } from './defaults';
+import { isCollectionSortMode } from './collectionOrder';
 import type {
   CapturedBrowserTab,
   Collection,
@@ -263,6 +264,11 @@ export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
     settings: {
       ...defaultSettings(),
       ...candidate.settings,
+      collectionSortByWorkspace: Object.fromEntries(
+        Object.entries(candidate.settings?.collectionSortByWorkspace ?? {}).filter(
+          ([workspaceId, mode]) => workspaceId.length > 0 && isCollectionSortMode(mode),
+        ),
+      ),
       collapsedCollectionIds: Array.isArray(candidate.settings?.collapsedCollectionIds)
         ? [
             ...new Set(

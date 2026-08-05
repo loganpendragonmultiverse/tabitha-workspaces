@@ -54,6 +54,14 @@ browser window IDs are ephemeral. List layout keeps direct tab editing and also 
 collection editor. Selecting a collection layout expands that workspace's collections so the
 visual change cannot be hidden behind collapsed headings.
 
+## Version 1.8 collection ordering release
+
+Version 1.8 makes newly captured manual collections immediately visible at the top of Custom order.
+Each workspace independently persists a Custom, Newest added, Oldest added, or A–Z display order.
+Changing a sort mode does not rewrite collection data; dragging within any sorted view converts the
+visible sequence into contiguous Custom order for that workspace. Existing libraries normalize to
+Custom order without a schema-version change.
+
 ## Version 1.3 feedback release
 
 Version 1.3 incorporates direct user feedback with a versioned data-model migration. Folders are

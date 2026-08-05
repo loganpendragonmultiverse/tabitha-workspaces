@@ -2,6 +2,13 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.8.0 - 2026-08-05
+
+- Made manually captured windows appear first in the workspace's custom collection order.
+- Added per-workspace Custom, Newest added, Oldest added, and A–Z collection ordering.
+- Made collection dragging from any sorted view preserve the visible sequence and switch that
+  workspace back to Custom order.
+
 ## 1.7.0 - 2026-08-04
 
 - Added a prominent Workspaces/Open windows switch at the top of the dashboard sidebar.
