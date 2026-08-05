@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.7.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.7.0/tabitha-workspaces-1.7.0-chrome.zip)
-- [Download Tabitha Workspaces 1.7.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.7.0/tabitha-workspaces-1.7.0-firefox.zip)
+- [Download Tabitha Workspaces 1.8.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.8.0/tabitha-workspaces-1.8.0-chrome.zip)
+- [Download Tabitha Workspaces 1.8.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.8.0/tabitha-workspaces-1.8.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -20,7 +20,8 @@ After downloading, follow the short browser-specific steps in
 
 - Uses top-level folders as isolated containers for one or more workspaces.
 - Optionally password-protects any top-level folder with PBKDF2-derived AES-256-GCM encryption.
-- Captures the current browser window as a restorable collection.
+- Captures the current browser window as a restorable collection at the top of its workspace's
+  custom order.
 - Restores collections into a new or existing window and optionally skips duplicate URLs.
 - Shows current browser windows and their open tabs in a separate live view that refreshes automatically.
 - Keeps a clear Workspaces/Open windows switch at the top of the dashboard and lets live browser
@@ -30,7 +31,9 @@ After downloading, follow the short browser-specific steps in
 - Searches workspace names, folders, collections, saved tabs, URLs, notes, and tags, with direct
   Workspaces, Collections, and URLs filters.
 - Soft-deletes workspaces, folders, collections, links, and notes into a recycle bin.
-- Reorders workspaces and collections with drag and drop.
+- Sorts each workspace's collections by Custom, Newest added, Oldest added, or A–Z order.
+- Reorders workspaces and collections with drag and drop; dragging a sorted collection view
+  preserves the visible sequence as the new Custom order.
 - Moves collections between workspaces by dragging them onto the workspace sidebar or editing them.
 - Switches saved collections between card, compact, and editable tab-row layouts.
 - Expands or collapses individual collections by clicking their headings, with persistent
@@ -107,8 +110,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.7.0-chrome.zip`
-- `.output/tabitha-workspaces-1.7.0-firefox.zip`
+- `.output/tabitha-workspaces-1.8.0-chrome.zip`
+- `.output/tabitha-workspaces-1.8.0-firefox.zip`
 
 ## Architecture
 

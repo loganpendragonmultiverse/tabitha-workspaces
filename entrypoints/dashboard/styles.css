@@ -457,6 +457,7 @@ main {
 .heading-actions,
 .button-row {
   display: flex;
+  align-items: center;
   gap: 9px;
 }
 .button {
@@ -689,6 +690,27 @@ main {
 .view-toggle button.active {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.collection-sort {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+.collection-sort select {
+  min-width: 118px;
+  padding: 7px 28px 7px 9px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  outline: none;
+}
+.collection-sort select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .collection-controls {
   display: flex;

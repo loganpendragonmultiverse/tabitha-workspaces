@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import type { BackgroundRequest, BackgroundResponse, LiveTab } from '../src/browser/messages';
 import { createId } from '../src/domain/defaults';
+import { insertCollectionAtTop } from '../src/domain/collectionOrder';
 import {
   createCollectionFromTabs,
   createRestorePlan,
@@ -63,14 +64,12 @@ const captureWindow = async (
       tabs,
       automatic,
     );
-    const collections = automatic
-      ? [
-          created,
-          ...state.collections
-            .filter((item) => !(item.automatic && item.workspaceId === workspaceId))
-            .slice(0, 49),
-        ]
-      : [...state.collections, created];
+    const previous = automatic
+      ? state.collections
+          .filter((item) => !(item.automatic && item.workspaceId === workspaceId))
+          .slice(0, 49)
+      : state.collections;
+    const collections = insertCollectionAtTop(previous, created);
     return { ...state, collections };
   });
   if (!created) throw new Error('The window could not be saved.');

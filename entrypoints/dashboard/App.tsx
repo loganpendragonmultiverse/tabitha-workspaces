@@ -8,6 +8,7 @@ import type {
 } from '../../src/browser/messages';
 import { createId } from '../../src/domain/defaults';
 import { applyWorkspaceLayout } from '../../src/domain/collectionView';
+import { reorderVisibleCollections, sortCollections } from '../../src/domain/collectionOrder';
 import {
   mergeFolderExport,
   parseFolderExport,
@@ -32,6 +33,7 @@ import { resolveDashboardView, type DashboardView } from '../../src/domain/navig
 import type {
   BaseEntity,
   Collection,
+  CollectionSortMode,
   EntityKind,
   Folder,
   LibraryState,
@@ -213,12 +215,25 @@ export function App() {
         workspaces: reorderEntities(library.workspaces, dragged.id, targetId),
       });
     } else {
-      const scoped = library.collections.filter((item) => item.workspaceId === selectedWorkspaceId);
-      const reordered = reorderEntities(scoped, dragged.id, targetId);
+      const sortMode = library.settings.collectionSortByWorkspace[selectedWorkspaceId] ?? 'custom';
+      const scoped = sortCollections(
+        library.collections.filter(
+          (item) => item.workspaceId === selectedWorkspaceId && !item.trashedAt,
+        ),
+        sortMode,
+      );
+      const reordered = reorderVisibleCollections(scoped, dragged.id, targetId);
       const byId = new Map(reordered.map((item) => [item.id, item]));
       await persist({
         ...library,
         collections: library.collections.map((item) => byId.get(item.id) ?? item),
+        settings: {
+          ...library.settings,
+          collectionSortByWorkspace: {
+            ...library.settings.collectionSortByWorkspace,
+            [selectedWorkspaceId]: 'custom',
+          },
+        },
       });
     }
     setDragged(null);
@@ -551,6 +566,18 @@ export function App() {
                   ),
                 })
               }
+              onSortChange={(collectionSort) =>
+                void persist({
+                  ...library,
+                  settings: {
+                    ...library.settings,
+                    collectionSortByWorkspace: {
+                      ...library.settings.collectionSortByWorkspace,
+                      [selectedWorkspaceId]: collectionSort,
+                    },
+                  },
+                })
+              }
               onCollapsedChange={(collapsedCollectionIds) =>
                 void persist({
                   ...library,
@@ -825,6 +852,7 @@ function Overview({
   onDrop,
   onUpdate,
   onLayoutChange,
+  onSortChange,
   onCollapsedChange,
   onDismissWelcome,
 }: {
@@ -839,6 +867,7 @@ function Overview({
   onDrop: (kind: 'collection', id: string) => Promise<void>;
   onUpdate: (collection: Collection) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
+  onSortChange: (sort: CollectionSortMode) => void;
   onCollapsedChange: (ids: string[]) => void;
   onDismissWelcome: () => void;
 }) {
@@ -924,6 +953,7 @@ function Overview({
         onDrop={onDrop}
         onUpdate={onUpdate}
         onLayoutChange={onLayoutChange}
+        onSortChange={onSortChange}
         onCollapsedChange={onCollapsedChange}
       />
     </>
@@ -951,6 +981,7 @@ function Collections({
   onDrop,
   onUpdate,
   onLayoutChange,
+  onSortChange,
   onCollapsedChange,
 }: {
   library: LibraryState;
@@ -963,10 +994,13 @@ function Collections({
   onDrop: (kind: 'collection', id: string) => Promise<void>;
   onUpdate: (collection: Collection) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
+  onSortChange: (sort: CollectionSortMode) => void;
   onCollapsedChange: (ids: string[]) => void;
 }) {
-  const collections = active(
-    library.collections.filter((item) => item.workspaceId === workspaceId),
+  const sortMode = library.settings.collectionSortByWorkspace[workspaceId] ?? 'custom';
+  const collections = sortCollections(
+    active(library.collections.filter((item) => item.workspaceId === workspaceId)),
+    sortMode,
   );
   const collapsed = new Set(library.settings.collapsedCollectionIds);
   const toggle = (id: string): void => {
@@ -993,6 +1027,19 @@ function Collections({
           </small>
         </div>
         <div class="heading-actions">
+          <label class="collection-sort">
+            <span>Order</span>
+            <select
+              aria-label="Collection order"
+              value={sortMode}
+              onChange={(event) => onSortChange(event.currentTarget.value as CollectionSortMode)}
+            >
+              <option value="custom">Custom</option>
+              <option value="newest">Newest added</option>
+              <option value="oldest">Oldest added</option>
+              <option value="alphabetical">A–Z</option>
+            </select>
+          </label>
           <div class="view-toggle" aria-label="Collection layout">
             <button
               class={library.settings.sessionLayout === 'cards' ? 'active' : ''}
