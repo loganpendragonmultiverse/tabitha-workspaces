@@ -165,6 +165,9 @@ describe('search and linked notes', () => {
     const state = fixture();
     expect(searchLibrary(state, 'research')[0]?.kind).toBe('collection');
     expect(searchLibrary(state, 'mozilla').some((result) => result.kind === 'tab')).toBe(true);
+    expect(searchLibrary(state, 'mozilla').find((result) => result.kind === 'tab')?.url).toBe(
+      'https://developer.mozilla.org/extensions',
+    );
     expect(searchLibrary(state, 'docs').some((result) => result.kind === 'link')).toBe(true);
     expect(searchLibrary(state, 'release').some((result) => result.kind === 'note')).toBe(true);
     expect(searchLibrary(state, 'research session')[0]?.score).toBe(100);
@@ -312,6 +315,9 @@ describe('versioned backups', () => {
     delete legacySettings.sessionLayout;
     delete legacySettings.showWelcomeBanner;
     delete legacySettings.openDashboardOnNewTab;
+    delete legacySettings.collapsedFolderIds;
+    delete legacySettings.homeWorkspaceId;
+    delete legacySettings.selectedWorkspaceId;
     const normalized = normalizeLibrary({
       ...state,
       revision: Number.NaN,
@@ -323,6 +329,9 @@ describe('versioned backups', () => {
     expect(normalized.settings.showWelcomeBanner).toBe(true);
     expect(normalized.settings.openDashboardOnNewTab).toBe(false);
     expect(normalized.settings.collapsedCollectionIds).toEqual([]);
+    expect(normalized.settings.collapsedFolderIds).toEqual([]);
+    expect(normalized.settings.homeWorkspaceId).toBe(state.workspaces[0]?.id);
+    expect(normalized.settings.selectedWorkspaceId).toBe(state.workspaces[0]?.id);
   });
 
   it('rejects unsupported and empty libraries', () => {

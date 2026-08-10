@@ -43,6 +43,12 @@ const selectedWorkspaceId = async (requested?: string): Promise<string> => {
   const state = await getLibrary();
   const workspace =
     state.workspaces.find((item) => item.id === requested && !item.trashedAt) ??
+    state.workspaces.find(
+      (item) => item.id === state.settings.selectedWorkspaceId && !item.trashedAt,
+    ) ??
+    state.workspaces.find(
+      (item) => item.id === state.settings.homeWorkspaceId && !item.trashedAt,
+    ) ??
     state.workspaces.find((item) => !item.trashedAt);
   if (!workspace) throw new Error('Create a workspace before saving browser tabs.');
   return workspace.id;
@@ -131,6 +137,11 @@ const restoreCollection = async (collectionId: string): Promise<string> => {
     ? ` ${plan.skippedDuplicates} duplicate${plan.skippedDuplicates === 1 ? ' was' : 's were'} skipped.`
     : '';
   return `Restored ${plan.urls.length} tab${plan.urls.length === 1 ? '' : 's'}.${duplicateMessage}`;
+};
+
+const openUrl = async (url: string): Promise<void> => {
+  if (!isRestorableUrl(url)) throw new Error('That saved URL cannot be opened by an extension.');
+  await browser.tabs.create({ url });
 };
 
 const getLiveTabs = async (): Promise<LiveTab[]> => {
@@ -237,6 +248,7 @@ const createMenus = async (): Promise<void> => {
 };
 
 export default defineBackground(() => {
+  let syncTimer: ReturnType<typeof setTimeout> | undefined;
   browser.runtime.onInstalled.addListener(() => {
     void createMenus();
     void refreshSnapshotAlarm();
@@ -272,8 +284,12 @@ export default defineBackground(() => {
     if (alarm.name === CLOUD_SYNC_ALARM) void syncCloud('auto').catch(() => undefined);
   });
 
-  browser.storage.onChanged.addListener((_changes, area) => {
-    if (area === 'local') void refreshSnapshotAlarm();
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    void refreshSnapshotAlarm();
+    if (!Object.keys(changes).some((key) => key.includes('library-v1'))) return;
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => void syncCloud('auto').catch(() => undefined), 1500);
   });
 
   browser.runtime.onMessage.addListener((request: BackgroundRequest): Promise<BackgroundResponse> =>
@@ -296,6 +312,9 @@ export default defineBackground(() => {
             return { ok: true };
           case 'restore-collection':
             return { ok: true, message: await restoreCollection(request.collectionId) };
+          case 'open-url':
+            await openUrl(request.url);
+            return { ok: true };
           case 'get-live-tabs':
             return { ok: true, tabs: await getLiveTabs() };
           case 'get-cloud-sync-config':

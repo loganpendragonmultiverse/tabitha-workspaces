@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.8.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.8.0/tabitha-workspaces-1.8.0-chrome.zip)
-- [Download Tabitha Workspaces 1.8.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.8.0/tabitha-workspaces-1.8.0-firefox.zip)
+- [Download Tabitha Workspaces 1.9.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.9.0/tabitha-workspaces-1.9.0-chrome.zip)
+- [Download Tabitha Workspaces 1.9.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.9.0/tabitha-workspaces-1.9.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -34,6 +34,12 @@ After downloading, follow the short browser-specific steps in
 - Sorts each workspace's collections by Custom, Newest added, Oldest added, or A–Z order.
 - Reorders workspaces and collections with drag and drop; dragging a sorted collection view
   preserves the visible sequence as the new Custom order.
+- Keeps one renameable Home workspace first, remembers the active capture destination, and places
+  newly created workspaces near the top of their folder.
+- Expands and collapses folders persistently and supports pinned, starred, and starred-only
+  workspace and collection views.
+- Renames a collection directly from its heading and opens an individual saved tab from search or
+  List layout.
 - Moves collections between workspaces by dragging them onto the workspace sidebar or editing them.
 - Switches saved collections between card, compact, and editable tab-row layouts.
 - Expands or collapses individual collections by clicking their headings, with persistent
@@ -46,7 +52,7 @@ After downloading, follow the short browser-specific steps in
   per folder. Protected folder files retain their encrypted vault.
 - Optionally synchronizes through a user-provided HTTPS WebDAV file with three-way conflict
   detection and conditional writes that prevent stale browsers from silently overwriting newer
-  remote data.
+  remote data. Enabled sync runs after local changes as well as on its periodic check.
 - Provides system, light, and dark themes, compact density, and a custom accent color.
 - Adds toolbar actions, page context menus, and keyboard shortcuts.
 
@@ -77,6 +83,10 @@ The extension requests only the following permissions:
 When WebDAV sync is enabled, Tabitha asks separately for access to only the HTTPS server origin
 selected by the user. WebDAV credentials stay in local extension storage and are not included in
 library exports or remote backup files.
+
+Koofr users must enter a full file URL under `https://app.koofr.net/dav/Koofr/` and use their Koofr
+email address plus an application-specific password. Saving and enabling the connection performs
+an immediate sync check so configuration or conflict errors are visible at once.
 
 No host permissions are requested. Read [PRIVACY.md](PRIVACY.md) for the complete policy.
 
@@ -110,8 +120,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.8.0-chrome.zip`
-- `.output/tabitha-workspaces-1.8.0-firefox.zip`
+- `.output/tabitha-workspaces-1.9.0-chrome.zip`
+- `.output/tabitha-workspaces-1.9.0-firefox.zip`
 
 ## Architecture
 

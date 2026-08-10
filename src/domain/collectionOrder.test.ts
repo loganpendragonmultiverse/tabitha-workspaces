@@ -65,4 +65,10 @@ describe('collection ordering', () => {
     expect(reordered.map((item) => item.id)).toEqual(['a', 'b', 'c']);
     expect(reordered.map((item) => item.order)).toEqual([0, 1, 2]);
   });
+
+  it('keeps pinned collections ahead of the selected sort mode', () => {
+    const pinned = { ...collection('pin', 'Zebra', 1, 99), pinned: true };
+    expect(sortCollections([...items, pinned], 'alphabetical')[0]?.id).toBe('pin');
+    expect(sortCollections([...items, pinned], 'custom')[0]?.id).toBe('pin');
+  });
 });

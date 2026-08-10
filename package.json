@@ -1,6 +1,6 @@
 {
   "name": "tabitha-workspaces",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "description": "A private, local-first workspace and tab collection manager for Chromium and Firefox.",
   "type": "module",

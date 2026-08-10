@@ -62,6 +62,17 @@ Changing a sort mode does not rewrite collection data; dragging within any sorte
 visible sequence into contiguous Custom order for that workspace. Existing libraries normalize to
 Custom order without a schema-version change.
 
+## Version 1.9 workspace reliability release
+
+Version 1.9 makes workspace targeting durable across every extension surface. One renameable Home
+workspace is retained permanently and sorted first, the last selected workspace becomes the popup
+and background capture target, and newly created folders and workspaces become the active
+destination. Folder expansion persists, workspaces and collections can be pinned or starred, and
+drag operations provide explicit browser drag data. Search and List layout can open one saved tab,
+while collection names support direct inline editing after capture. Enabled WebDAV sync checks
+immediately when configured and shortly after each local library write without weakening three-way
+conflict detection.
+
 ## Version 1.3 feedback release
 
 Version 1.3 incorporates direct user feedback with a versioned data-model migration. Folders are

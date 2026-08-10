@@ -14,6 +14,7 @@ export type BackgroundRequest =
   | { type: 'capture-window'; workspaceId?: string; name?: string; automatic?: boolean }
   | { type: 'capture-active-link'; workspaceId?: string }
   | { type: 'restore-collection'; collectionId: string }
+  | { type: 'open-url'; url: string }
   | { type: 'get-live-tabs' }
   | { type: 'get-cloud-sync-config' }
   | {

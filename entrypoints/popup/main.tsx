@@ -17,7 +17,10 @@ function Popup() {
   useEffect(() => {
     void getLibrary().then(setLibrary);
   }, []);
-  const workspace = library?.workspaces.find((item) => !item.trashedAt);
+  const workspace =
+    library?.workspaces.find(
+      (item) => item.id === library.settings.selectedWorkspaceId && !item.trashedAt,
+    ) ?? library?.workspaces.find((item) => !item.trashedAt);
   const recent =
     library?.collections
       .filter((item) => !item.trashedAt && !item.automatic)

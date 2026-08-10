@@ -13,6 +13,8 @@ export interface Workspace extends BaseEntity {
   color: string;
   description: string;
   folderId: string;
+  pinned?: boolean;
+  starred?: boolean;
 }
 
 export interface Folder extends BaseEntity {
@@ -54,6 +56,8 @@ export interface Collection extends BaseEntity {
   tabs: SavedTab[];
   lastOpenedAt?: number;
   automatic: boolean;
+  pinned?: boolean;
+  starred?: boolean;
 }
 
 export interface SavedLink extends BaseEntity {
@@ -89,6 +93,9 @@ export interface Settings {
   sessionLayout: SessionLayout;
   collectionSortByWorkspace: Record<string, CollectionSortMode>;
   collapsedCollectionIds: string[];
+  collapsedFolderIds: string[];
+  homeWorkspaceId: string;
+  selectedWorkspaceId: string;
   showWelcomeBanner: boolean;
   openDashboardOnNewTab: boolean;
 }
@@ -139,6 +146,7 @@ export interface SearchResult {
   detail: string;
   workspaceId?: string;
   parentId?: string;
+  url?: string;
   score: number;
 }
 

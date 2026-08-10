@@ -215,6 +215,9 @@ body {
   padding: 0;
   font-size: 17px;
 }
+.section-label button.active {
+  color: var(--accent);
+}
 .section-label > div {
   display: flex;
   gap: 10px;
@@ -227,6 +230,10 @@ body {
 }
 .folder-node {
   min-width: 0;
+}
+.folder-node.selected > .folder-heading {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  border-radius: 7px;
 }
 .folder-heading {
   display: flex;
@@ -246,6 +253,12 @@ body {
   font-size: 11px;
   font-weight: 750;
   text-align: left;
+}
+.folder-name > span {
+  transition: transform 120ms ease;
+}
+.folder-name[aria-expanded='false'] > span {
+  transform: rotate(-90deg);
 }
 .folder-security {
   padding: 4px 5px;
@@ -278,8 +291,30 @@ body {
   display: grid;
   gap: 2px;
 }
+.workspace-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
 .workspace {
   width: 100%;
+}
+.workspace em {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 8px;
+  font-style: normal;
+  text-transform: uppercase;
+}
+.workspace-action {
+  padding: 4px;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 8px;
+}
+.workspace-action:hover {
+  color: var(--accent);
 }
 .workspace i {
   width: 8px;
@@ -780,6 +815,15 @@ main {
 .collection-header small {
   color: var(--muted);
 }
+.collection-name {
+  padding: 3px 5px !important;
+  color: var(--text) !important;
+  font-size: 12px !important;
+}
+.collection-name-input {
+  width: min(260px, 35vw);
+  padding: 5px 7px;
+}
 .collection-chevron {
   width: 25px;
   padding: 3px !important;
@@ -894,10 +938,18 @@ main {
 .editable-tab-row {
   padding: 7px 10px;
   display: grid;
-  grid-template-columns: 25px minmax(130px, 0.8fr) minmax(220px, 1.2fr) 30px;
+  grid-template-columns: 25px minmax(130px, 0.8fr) minmax(220px, 1.2fr) auto 30px;
   gap: 8px;
   align-items: center;
   border-bottom: 1px solid var(--border);
+}
+.tab-open {
+  padding: 5px 7px;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 700;
 }
 .editable-tab-row:last-child {
   border-bottom: 0;

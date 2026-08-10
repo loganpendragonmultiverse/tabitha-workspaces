@@ -14,6 +14,9 @@ export const defaultSettings = (): Settings => ({
   sessionLayout: 'cards',
   collectionSortByWorkspace: {},
   collapsedCollectionIds: [],
+  collapsedFolderIds: [],
+  homeWorkspaceId: '',
+  selectedWorkspaceId: '',
   showWelcomeBanner: true,
   openDashboardOnNewTab: false,
 });
@@ -32,6 +35,8 @@ export const createWorkspace = (
     description,
     color: DEFAULT_ACCENT,
     folderId,
+    pinned: false,
+    starred: false,
     createdAt: now,
     updatedAt: now,
     order: 0,
@@ -53,15 +58,20 @@ export const createFolder = (name = 'Personal'): Folder => {
 export const createDefaultState = (): LibraryState => {
   const now = Date.now();
   const folder = createFolder();
+  const workspace = createWorkspace('My Workspace', undefined, folder.id);
   return {
     schemaVersion: 3,
     revision: 0,
     updatedAt: now,
-    workspaces: [createWorkspace('My Workspace', undefined, folder.id)],
+    workspaces: [workspace],
     folders: [folder],
     collections: [],
     links: [],
     notes: [],
-    settings: defaultSettings(),
+    settings: {
+      ...defaultSettings(),
+      homeWorkspaceId: workspace.id,
+      selectedWorkspaceId: workspace.id,
+    },
   };
 };

@@ -10,6 +10,9 @@ const stableNameCompare = (left: Collection, right: Collection): number =>
   right.createdAt - left.createdAt ||
   left.id.localeCompare(right.id);
 
+const pinnedFirst = (left: Collection, right: Collection): number =>
+  Number(Boolean(right.pinned)) - Number(Boolean(left.pinned));
+
 /** Return a display-only ordering without mutating the persisted collection array. */
 export const sortCollections = (
   collections: Collection[],
@@ -19,17 +22,26 @@ export const sortCollections = (
   switch (mode) {
     case 'newest':
       return sorted.sort(
-        (left, right) => right.createdAt - left.createdAt || stableNameCompare(left, right),
+        (left, right) =>
+          pinnedFirst(left, right) ||
+          right.createdAt - left.createdAt ||
+          stableNameCompare(left, right),
       );
     case 'oldest':
       return sorted.sort(
-        (left, right) => left.createdAt - right.createdAt || stableNameCompare(left, right),
+        (left, right) =>
+          pinnedFirst(left, right) ||
+          left.createdAt - right.createdAt ||
+          stableNameCompare(left, right),
       );
     case 'alphabetical':
-      return sorted.sort(stableNameCompare);
+      return sorted.sort(
+        (left, right) => pinnedFirst(left, right) || stableNameCompare(left, right),
+      );
     case 'custom':
       return sorted.sort(
-        (left, right) => left.order - right.order || right.createdAt - left.createdAt,
+        (left, right) =>
+          pinnedFirst(left, right) || left.order - right.order || right.createdAt - left.createdAt,
       );
   }
 };
@@ -40,7 +52,9 @@ export const insertCollectionAtTop = (
   created: Collection,
 ): Collection[] => [
   ...collections.map((item) =>
-    item.workspaceId === created.workspaceId ? { ...item, order: item.order + 1 } : item,
+    item.workspaceId === created.workspaceId && Boolean(item.pinned) === Boolean(created.pinned)
+      ? { ...item, order: item.order + 1 }
+      : item,
   ),
   { ...created, order: 0 },
 ];

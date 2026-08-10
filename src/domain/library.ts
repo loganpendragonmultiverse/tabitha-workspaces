@@ -60,6 +60,8 @@ export const createCollectionFromTabs = (
     tags: automatic ? ['recovery'] : [],
     tabs: captureTabs(tabs),
     automatic,
+    pinned: false,
+    starred: false,
     createdAt: now,
     updatedAt: now,
     order: state.collections.filter((item) => item.workspaceId === workspaceId).length,
@@ -157,6 +159,7 @@ export const searchLibrary = (
           kind: 'tab',
           name: tab.title,
           detail: tab.url,
+          url: tab.url,
           workspaceId: item.workspaceId,
           parentId: item.id,
         }),
@@ -170,6 +173,7 @@ export const searchLibrary = (
         kind: 'link',
         name: item.name,
         detail: `${item.url} ${item.description} ${item.tags.join(' ')}`,
+        url: item.url,
         workspaceId: item.workspaceId,
       }),
     );
@@ -248,15 +252,29 @@ export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
       : [];
   const fallbackFolder = folders.find((item) => !item.trashedAt) ?? migratedFolder;
   if (folders.length === 0) folders.push(fallbackFolder);
+  const workspaces = candidate.workspaces.map((item) => ({
+    ...item,
+    folderId: isLegacy ? migratedFolder.id : item.folderId || fallbackFolder.id,
+  }));
+  const activeWorkspaceIds = new Set(
+    workspaces.filter((item) => !item.trashedAt).map((item) => item.id),
+  );
+  const requestedHomeWorkspaceId = candidate.settings?.homeWorkspaceId;
+  const homeWorkspaceId =
+    requestedHomeWorkspaceId && activeWorkspaceIds.has(requestedHomeWorkspaceId)
+      ? requestedHomeWorkspaceId
+      : (workspaces.find((item) => !item.trashedAt)?.id ?? '');
+  const requestedSelectedWorkspaceId = candidate.settings?.selectedWorkspaceId;
+  const selectedWorkspaceId =
+    requestedSelectedWorkspaceId && activeWorkspaceIds.has(requestedSelectedWorkspaceId)
+      ? requestedSelectedWorkspaceId
+      : homeWorkspaceId;
   return {
     ...candidate,
     schemaVersion: 3,
     revision: Number.isFinite(candidate.revision) ? candidate.revision : 0,
     updatedAt: Number.isFinite(candidate.updatedAt) ? candidate.updatedAt : Date.now(),
-    workspaces: candidate.workspaces.map((item) => ({
-      ...item,
-      folderId: isLegacy ? migratedFolder.id : item.folderId || fallbackFolder.id,
-    })),
+    workspaces,
     folders,
     collections: Array.isArray(candidate.collections) ? candidate.collections : [],
     links: Array.isArray(candidate.links) ? candidate.links : [],
@@ -276,6 +294,11 @@ export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
             ),
           ]
         : [],
+      collapsedFolderIds: Array.isArray(candidate.settings?.collapsedFolderIds)
+        ? [...new Set(candidate.settings.collapsedFolderIds.filter((id) => typeof id === 'string'))]
+        : [],
+      homeWorkspaceId,
+      selectedWorkspaceId,
     },
   };
 };

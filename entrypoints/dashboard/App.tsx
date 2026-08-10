@@ -30,6 +30,7 @@ import {
 } from '../../src/domain/library';
 import { groupLiveTabs, setCollapsedWindowKeys } from '../../src/domain/liveWindows';
 import { resolveDashboardView, type DashboardView } from '../../src/domain/navigation';
+import { insertWorkspaceNearTop, sortWorkspaces } from '../../src/domain/workspaceOrder';
 import type {
   BaseEntity,
   Collection,
@@ -39,6 +40,7 @@ import type {
   LibraryState,
   Note,
   SavedLink,
+  SearchResult,
   SearchScope,
   Settings,
   Workspace,
@@ -107,6 +109,7 @@ const fileSafeName = (value: string): string =>
 export function App() {
   const [library, setLocalLibrary] = useState<LibraryState | null>(null);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState('');
+  const [selectedFolderId, setSelectedFolderId] = useState('');
   const [view, setView] = useState<View>(() => resolveDashboardView(location.hash));
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
@@ -114,6 +117,8 @@ export function App() {
   const [liveTabs, setLiveTabs] = useState<LiveTab[]>([]);
   const [collapsedLiveWindowKeys, setCollapsedLiveWindowKeys] = useState<string[]>([]);
   const [toast, setToast] = useState('');
+  const [showStarredOnly, setShowStarredOnly] = useState(false);
+  const [renamingCollectionId, setRenamingCollectionId] = useState('');
   const [passwordAction, setPasswordAction] = useState<PasswordAction | null>(null);
   const [dragged, setDragged] = useState<{ kind: 'workspace' | 'collection'; id: string } | null>(
     null,
@@ -123,7 +128,12 @@ export function App() {
   useEffect(() => {
     void getLibrary().then((state) => {
       setLocalLibrary(state);
-      setSelectedWorkspaceId(active(state.workspaces)[0]?.id ?? '');
+      const selected =
+        state.workspaces.find(
+          (item) => item.id === state.settings.selectedWorkspaceId && !item.trashedAt,
+        ) ?? active(state.workspaces)[0];
+      setSelectedWorkspaceId(selected?.id ?? '');
+      setSelectedFolderId(selected?.folderId ?? active(state.folders)[0]?.id ?? '');
     });
     return libraryItem.watch(() => void getLibrary().then(setLocalLibrary));
   }, []);
@@ -156,6 +166,21 @@ export function App() {
     setLocalLibrary(await setLibrary(next));
   };
 
+  const selectWorkspace = async (workspaceId: string): Promise<void> => {
+    if (!library) return;
+    const workspace = library.workspaces.find((item) => item.id === workspaceId && !item.trashedAt);
+    if (!workspace) return;
+    setSelectedWorkspaceId(workspace.id);
+    setSelectedFolderId(workspace.folderId);
+    setView('overview');
+    if (library.settings.selectedWorkspaceId !== workspace.id) {
+      await persist({
+        ...library,
+        settings: { ...library.settings, selectedWorkspaceId: workspace.id },
+      });
+    }
+  };
+
   const searchResults = useMemo(
     () => (library && query.trim() ? searchLibrary(library, query, searchScope) : []),
     [library, query, searchScope],
@@ -174,7 +199,10 @@ export function App() {
         ? `Saved ${response.collection?.tabs.length ?? 0} tabs as a collection.`
         : response.error,
     );
-    if (response.ok) setView('overview');
+    if (response.ok) {
+      setView('overview');
+      setRenamingCollectionId(response.collection?.id ?? '');
+    }
   };
 
   const restoreCollection = async (collection: Collection): Promise<void> => {
@@ -189,8 +217,18 @@ export function App() {
 
   const trash = async (kind: EntityKind, id: string): Promise<void> => {
     if (!library) return;
-    if (kind === 'workspace' && active(library.workspaces).length === 1) {
-      setToast('Create another workspace before deleting this one.');
+    if (kind === 'workspace' && id === library.settings.homeWorkspaceId) {
+      setToast('Home is permanent, but you can rename it whenever you like.');
+      return;
+    }
+    if (
+      kind === 'folder' &&
+      library.workspaces.some(
+        (workspace) =>
+          workspace.id === library.settings.homeWorkspaceId && workspace.folderId === id,
+      )
+    ) {
+      setToast('Move Home to another folder before deleting this folder.');
       return;
     }
     if (kind === 'folder' && active(library.folders).length === 1) {
@@ -255,12 +293,40 @@ export function App() {
     setToast('Collection moved to the selected workspace.');
   };
 
-  const openSearchResult = (kind: string, workspaceId?: string): void => {
-    if (workspaceId) setSelectedWorkspaceId(workspaceId);
-    if (kind === 'collection' || kind === 'tab') setView('overview');
-    else if (kind === 'link') setView('links');
-    else if (kind === 'note') setView('notes');
-    else setView('overview');
+  const openSearchResult = (result: SearchResult): void => {
+    if (result.kind === 'tab' || result.kind === 'link') {
+      void send({ type: 'open-url', url: result.url ?? result.detail }).then(
+        (response) => !response.ok && setToast(response.error),
+      );
+    } else if (result.kind === 'workspace') void selectWorkspace(result.id);
+    else if (result.workspaceId) {
+      const workspace = library?.workspaces.find((item) => item.id === result.workspaceId);
+      if (workspace && library) {
+        setSelectedWorkspaceId(workspace.id);
+        setSelectedFolderId(workspace.folderId);
+        setView(result.kind === 'note' ? 'notes' : 'overview');
+        void persist({
+          ...library,
+          settings: {
+            ...library.settings,
+            selectedWorkspaceId: workspace.id,
+            collapsedCollectionIds:
+              result.kind === 'collection'
+                ? library.settings.collapsedCollectionIds.filter((id) => id !== result.id)
+                : library.settings.collapsedCollectionIds,
+          },
+        });
+      }
+    } else if (result.kind === 'folder' && library) {
+      setSelectedFolderId(result.id);
+      void persist({
+        ...library,
+        settings: {
+          ...library.settings,
+          collapsedFolderIds: library.settings.collapsedFolderIds.filter((id) => id !== result.id),
+        },
+      });
+    }
     setQuery('');
   };
 
@@ -313,7 +379,13 @@ export function App() {
         <span class="brand-mark">T</span>Loading Tabitha…
       </div>
     );
-  const visibleWorkspaces = active(library.workspaces);
+  const visibleWorkspaces = sortWorkspaces(
+    active(library.workspaces).filter(
+      (workspace) =>
+        !showStarredOnly || workspace.starred || workspace.id === library.settings.homeWorkspaceId,
+    ),
+    library.settings.homeWorkspaceId,
+  );
   const visibleFolders = active(library.folders);
 
   return (
@@ -361,6 +433,13 @@ export function App() {
         <div class="section-label">
           <span>Folders</span>
           <div>
+            <button
+              class={showStarredOnly ? 'active' : ''}
+              title={showStarredOnly ? 'Show every workspace' : 'Show starred workspaces only'}
+              onClick={() => setShowStarredOnly((value) => !value)}
+            >
+              Star
+            </button>
             <button title="New folder" onClick={() => setEditor({ kind: 'folder' })}>
               ＋
             </button>
@@ -375,28 +454,54 @@ export function App() {
         </div>
         <div class="folder-tree">
           {visibleFolders.map((folder) => {
+            const collapsed = library.settings.collapsedFolderIds.includes(folder.id);
             const folderWorkspaces = visibleWorkspaces.filter(
               (workspace) => workspace.folderId === folder.id,
             );
             return (
-              <section class={`folder-node${folder.locked ? ' locked' : ''}`}>
+              <section
+                class={`folder-node${folder.locked ? ' locked' : ''}${selectedFolderId === folder.id ? ' selected' : ''}`}
+              >
                 <div class="folder-heading">
                   <button
                     class="folder-name"
+                    aria-expanded={!collapsed}
                     onClick={() => {
                       if (folder.locked) {
                         setPasswordAction({ folder, mode: 'unlock' });
                         return;
                       }
-                      if (folderWorkspaces[0]) setSelectedWorkspaceId(folderWorkspaces[0].id);
-                      setView('overview');
+                      setSelectedFolderId(folder.id);
+                      const folderWorkspace =
+                        folderWorkspaces.find(
+                          (workspace) => workspace.id === selectedWorkspaceId,
+                        ) ?? folderWorkspaces[0];
+                      if (folderWorkspace) {
+                        setSelectedWorkspaceId(folderWorkspace.id);
+                        setView('overview');
+                      }
+                      void persist({
+                        ...library,
+                        settings: {
+                          ...library.settings,
+                          selectedWorkspaceId:
+                            folderWorkspace?.id ?? library.settings.selectedWorkspaceId,
+                          collapsedFolderIds: collapsed
+                            ? library.settings.collapsedFolderIds.filter((id) => id !== folder.id)
+                            : [...library.settings.collapsedFolderIds, folder.id],
+                        },
+                      });
                     }}
                     onDblClick={() =>
                       folder.locked
                         ? setPasswordAction({ folder, mode: 'unlock' })
                         : setEditor({ kind: 'folder', id: folder.id })
                     }
-                    title={folder.locked ? 'Unlock folder' : 'Double-click to edit folder'}
+                    title={
+                      folder.locked
+                        ? 'Unlock folder'
+                        : 'Click to expand or collapse; double-click to edit'
+                    }
                   >
                     <span>{folder.locked ? '🔒' : '▾'}</span>
                     {folder.name}
@@ -444,28 +549,70 @@ export function App() {
                     Delete
                   </button>
                 </div>
-                <div class="workspace-list">
-                  {folderWorkspaces.map((item) => (
-                    <button
-                      draggable
-                      class={item.id === selectedWorkspaceId ? 'workspace active' : 'workspace'}
-                      onDragStart={() => setDragged({ kind: 'workspace', id: item.id })}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={() =>
-                        void (dragged?.kind === 'collection'
-                          ? moveCollectionToWorkspace(item.id)
-                          : handleDrop('workspace', item.id))
-                      }
-                      onClick={() => {
-                        setSelectedWorkspaceId(item.id);
-                        setView('overview');
-                      }}
-                    >
-                      <i style={{ background: item.color }} />
-                      <span>{item.name}</span>
-                    </button>
-                  ))}
-                </div>
+                {!collapsed && (
+                  <div class="workspace-list">
+                    {folderWorkspaces.map((item) => (
+                      <div
+                        class="workspace-row"
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={() =>
+                          void (dragged?.kind === 'collection'
+                            ? moveCollectionToWorkspace(item.id)
+                            : handleDrop('workspace', item.id))
+                        }
+                      >
+                        <button
+                          draggable
+                          class={item.id === selectedWorkspaceId ? 'workspace active' : 'workspace'}
+                          onDragStart={(event) => {
+                            if (event.dataTransfer) {
+                              event.dataTransfer.effectAllowed = 'move';
+                              event.dataTransfer.setData('text/plain', item.id);
+                            }
+                            setDragged({ kind: 'workspace', id: item.id });
+                          }}
+                          onClick={() => void selectWorkspace(item.id)}
+                        >
+                          <i style={{ background: item.color }} />
+                          <span>{item.name}</span>
+                          {item.id === library.settings.homeWorkspaceId && <em>Home</em>}
+                        </button>
+                        <button
+                          class="workspace-action"
+                          title={item.pinned ? 'Unpin workspace' : 'Pin workspace'}
+                          onClick={() =>
+                            void persist({
+                              ...library,
+                              workspaces: library.workspaces.map((workspace) =>
+                                workspace.id === item.id
+                                  ? { ...workspace, pinned: !workspace.pinned }
+                                  : workspace,
+                              ),
+                            })
+                          }
+                        >
+                          {item.pinned ? 'Pinned' : 'Pin'}
+                        </button>
+                        <button
+                          class="workspace-action"
+                          title={item.starred ? 'Remove star' : 'Star workspace'}
+                          onClick={() =>
+                            void persist({
+                              ...library,
+                              workspaces: library.workspaces.map((workspace) =>
+                                workspace.id === item.id
+                                  ? { ...workspace, starred: !workspace.starred }
+                                  : workspace,
+                              ),
+                            })
+                          }
+                        >
+                          {item.starred ? 'Starred' : 'Star'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
             );
           })}
@@ -510,7 +657,7 @@ export function App() {
                   <p>No saved content matched.</p>
                 ) : (
                   searchResults.slice(0, 50).map((result) => (
-                    <button onClick={() => openSearchResult(result.kind, result.workspaceId)}>
+                    <button onClick={() => openSearchResult(result)}>
                       <span class="result-kind">{result.kind}</span>
                       <strong>{result.name}</strong>
                       <small>{result.detail.slice(0, 90)}</small>
@@ -584,6 +731,8 @@ export function App() {
                   settings: { ...library.settings, collapsedCollectionIds },
                 })
               }
+              renamingCollectionId={renamingCollectionId}
+              onRenameComplete={() => setRenamingCollectionId('')}
               onDismissWelcome={() =>
                 void persist({
                   ...library,
@@ -670,9 +819,35 @@ export function App() {
           target={editor}
           library={library}
           workspaceId={selectedWorkspaceId}
+          selectedFolderId={selectedFolderId}
           onClose={() => setEditor(null)}
-          onSave={async (next) => {
-            await persist(next);
+          onSave={async (next, entity) => {
+            const stored = await setLibrary(next);
+            setLocalLibrary(stored);
+            if (editor.kind === 'folder') {
+              setSelectedFolderId(entity.id);
+              if (stored.settings.collapsedFolderIds.includes(entity.id)) {
+                const expanded = await setLibrary({
+                  ...stored,
+                  settings: {
+                    ...stored.settings,
+                    collapsedFolderIds: stored.settings.collapsedFolderIds.filter(
+                      (id) => id !== entity.id,
+                    ),
+                  },
+                });
+                setLocalLibrary(expanded);
+              }
+            }
+            if (editor.kind === 'workspace') {
+              setSelectedWorkspaceId(entity.id);
+              setSelectedFolderId((entity as Workspace).folderId);
+              const selected = await setLibrary({
+                ...stored,
+                settings: { ...stored.settings, selectedWorkspaceId: entity.id },
+              });
+              setLocalLibrary(selected);
+            }
             setEditor(null);
             setToast('Saved.');
           }}
@@ -854,6 +1029,8 @@ function Overview({
   onLayoutChange,
   onSortChange,
   onCollapsedChange,
+  renamingCollectionId,
+  onRenameComplete,
   onDismissWelcome,
 }: {
   library: LibraryState;
@@ -869,6 +1046,8 @@ function Overview({
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
   onSortChange: (sort: CollectionSortMode) => void;
   onCollapsedChange: (ids: string[]) => void;
+  renamingCollectionId: string;
+  onRenameComplete: () => void;
   onDismissWelcome: () => void;
 }) {
   const workspace = library.workspaces.find((item) => item.id === workspaceId);
@@ -955,6 +1134,8 @@ function Overview({
         onLayoutChange={onLayoutChange}
         onSortChange={onSortChange}
         onCollapsedChange={onCollapsedChange}
+        renamingCollectionId={renamingCollectionId}
+        onRenameComplete={onRenameComplete}
       />
     </>
   );
@@ -983,6 +1164,8 @@ function Collections({
   onLayoutChange,
   onSortChange,
   onCollapsedChange,
+  renamingCollectionId,
+  onRenameComplete,
 }: {
   library: LibraryState;
   workspaceId: string;
@@ -996,10 +1179,17 @@ function Collections({
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
   onSortChange: (sort: CollectionSortMode) => void;
   onCollapsedChange: (ids: string[]) => void;
+  renamingCollectionId: string;
+  onRenameComplete: () => void;
 }) {
+  const [showStarredOnly, setShowStarredOnly] = useState(false);
   const sortMode = library.settings.collectionSortByWorkspace[workspaceId] ?? 'custom';
   const collections = sortCollections(
-    active(library.collections.filter((item) => item.workspaceId === workspaceId)),
+    active(
+      library.collections.filter(
+        (item) => item.workspaceId === workspaceId && (!showStarredOnly || item.starred),
+      ),
+    ),
     sortMode,
   );
   const collapsed = new Set(library.settings.collapsedCollectionIds);
@@ -1063,6 +1253,12 @@ function Collections({
               List
             </button>
           </div>
+          <button
+            class={`button ghost${showStarredOnly ? ' active' : ''}`}
+            onClick={() => setShowStarredOnly((value) => !value)}
+          >
+            {showStarredOnly ? 'Show all' : 'Starred only'}
+          </button>
           <button class="button primary" onClick={() => void onCapture()}>
             Save current window
           </button>
@@ -1091,6 +1287,8 @@ function Collections({
               onRestore={onRestore}
               onEdit={() => onEdit({ kind: 'collection', id: item.id })}
               onTrash={() => void onTrash('collection', item.id)}
+              renameRequested={renamingCollectionId === item.id}
+              onRenameComplete={onRenameComplete}
               onDragStart={() => onDrag({ kind: 'collection', id: item.id })}
               onDrop={() => void onDrop('collection', item.id)}
             />
@@ -1110,6 +1308,8 @@ function CollectionGroup({
   onRestore,
   onEdit,
   onTrash,
+  renameRequested,
+  onRenameComplete,
   onDragStart,
   onDrop,
 }: {
@@ -1121,9 +1321,24 @@ function CollectionGroup({
   onRestore: (collection: Collection) => Promise<void>;
   onEdit: () => void;
   onTrash: () => void;
+  renameRequested: boolean;
+  onRenameComplete: () => void;
   onDragStart: () => void;
   onDrop: () => void;
 }) {
+  const [renaming, setRenaming] = useState(renameRequested);
+  const [name, setName] = useState(item.name);
+  useEffect(() => {
+    if (renameRequested) setRenaming(true);
+  }, [renameRequested]);
+  useEffect(() => setName(item.name), [item.name]);
+  const finishRename = async (): Promise<void> => {
+    const nextName = name.trim();
+    if (nextName && nextName !== item.name)
+      await onSave({ ...item, name: nextName, updatedAt: Date.now() });
+    setRenaming(false);
+    onRenameComplete();
+  };
   if (layout === 'list')
     return (
       <SessionListEditor
@@ -1134,13 +1349,23 @@ function CollectionGroup({
         onRestore={onRestore}
         onEdit={onEdit}
         onTrash={onTrash}
+        renameRequested={renameRequested}
+        onRenameComplete={onRenameComplete}
+        onDragStart={onDragStart}
+        onDrop={onDrop}
       />
     );
   return (
     <section
       class="collection-group"
       draggable
-      onDragStart={onDragStart}
+      onDragStart={(event) => {
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', item.id);
+        }
+        onDragStart();
+      }}
       onDragOver={(event) => event.preventDefault()}
       onDrop={onDrop}
     >
@@ -1149,10 +1374,43 @@ function CollectionGroup({
           <button class="collection-chevron" aria-label={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? '›' : '⌄'}
           </button>
-          <strong>{item.name}</strong>
+          {renaming ? (
+            <input
+              class="collection-name-input"
+              autoFocus
+              value={name}
+              onClick={(event) => event.stopPropagation()}
+              onInput={(event) => setName(event.currentTarget.value)}
+              onBlur={() => void finishRename()}
+              onKeyDown={(event) => event.key === 'Enter' && void finishRename()}
+            />
+          ) : (
+            <button
+              class="collection-name"
+              title="Rename collection"
+              onClick={(event) => {
+                event.stopPropagation();
+                setRenaming(true);
+              }}
+            >
+              {item.name}
+            </button>
+          )}
           <small>{item.tabs.length} tabs</small>
         </div>
         <div onClick={(event) => event.stopPropagation()}>
+          <button
+            title={item.pinned ? 'Unpin collection' : 'Pin collection'}
+            onClick={() => void onSave({ ...item, pinned: !item.pinned, updatedAt: Date.now() })}
+          >
+            {item.pinned ? 'Pinned' : 'Pin'}
+          </button>
+          <button
+            title={item.starred ? 'Remove star' : 'Star collection'}
+            onClick={() => void onSave({ ...item, starred: !item.starred, updatedAt: Date.now() })}
+          >
+            {item.starred ? 'Starred' : 'Star'}
+          </button>
           <button onClick={() => void onRestore(item)}>Restore</button>
           <button onClick={onEdit}>Edit</button>
           <button class="danger" onClick={onTrash}>
@@ -1191,6 +1449,10 @@ function SessionListEditor({
   onRestore,
   onEdit,
   onTrash,
+  renameRequested,
+  onRenameComplete,
+  onDragStart,
+  onDrop,
 }: {
   item: Collection;
   collapsed: boolean;
@@ -1199,10 +1461,27 @@ function SessionListEditor({
   onRestore: (collection: Collection) => Promise<void>;
   onEdit: () => void;
   onTrash: () => void;
+  renameRequested: boolean;
+  onRenameComplete: () => void;
+  onDragStart: () => void;
+  onDrop: () => void;
 }) {
   const [tabs, setTabs] = useState(item.tabs);
   const [dirty, setDirty] = useState(false);
+  const [renaming, setRenaming] = useState(renameRequested);
+  const [name, setName] = useState(item.name);
   useEffect(() => setTabs(item.tabs), [item]);
+  useEffect(() => {
+    if (renameRequested) setRenaming(true);
+  }, [renameRequested]);
+  useEffect(() => setName(item.name), [item.name]);
+  const finishRename = async (): Promise<void> => {
+    const nextName = name.trim();
+    if (nextName && nextName !== item.name)
+      await onSave({ ...item, name: nextName, updatedAt: Date.now() });
+    setRenaming(false);
+    onRenameComplete();
+  };
   const changeTab = (id: string, change: { title?: string; url?: string }): void => {
     setTabs((current) => updateSavedTab({ ...item, tabs: current }, id, change).tabs);
     setDirty(true);
@@ -1224,16 +1503,59 @@ function SessionListEditor({
     setDirty(false);
   };
   return (
-    <article class="session-list-group">
+    <article
+      class="session-list-group"
+      draggable
+      onDragStart={(event) => {
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', item.id);
+        }
+        onDragStart();
+      }}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={onDrop}
+    >
       <header onClick={onToggle}>
         <div>
           <button class="collection-chevron" aria-label={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? '›' : '⌄'}
           </button>
-          <strong>{item.name}</strong>
+          {renaming ? (
+            <input
+              class="collection-name-input"
+              autoFocus
+              value={name}
+              onClick={(event) => event.stopPropagation()}
+              onInput={(event) => setName(event.currentTarget.value)}
+              onBlur={() => void finishRename()}
+              onKeyDown={(event) => event.key === 'Enter' && void finishRename()}
+            />
+          ) : (
+            <button
+              class="collection-name"
+              title="Rename collection"
+              onClick={(event) => {
+                event.stopPropagation();
+                setRenaming(true);
+              }}
+            >
+              {item.name}
+            </button>
+          )}
           <small>{tabs.length} tabs</small>
         </div>
         <div onClick={(event) => event.stopPropagation()}>
+          <button
+            onClick={() => void onSave({ ...item, pinned: !item.pinned, updatedAt: Date.now() })}
+          >
+            {item.pinned ? 'Pinned' : 'Pin'}
+          </button>
+          <button
+            onClick={() => void onSave({ ...item, starred: !item.starred, updatedAt: Date.now() })}
+          >
+            {item.starred ? 'Starred' : 'Star'}
+          </button>
           {dirty && <button onClick={() => void save()}>Save changes</button>}
           <button onClick={() => void onRestore(item)}>Restore</button>
           <button onClick={onEdit}>Edit</button>
@@ -1259,6 +1581,14 @@ function SessionListEditor({
               value={tab.url}
               onInput={(event) => changeTab(tab.id, { url: event.currentTarget.value })}
             />
+            <button
+              class="tab-open"
+              aria-label={`Open ${tab.title}`}
+              title="Open this tab"
+              onClick={() => void send({ type: 'open-url', url: tab.url })}
+            >
+              Open
+            </button>
             <button
               class="tab-delete"
               aria-label={`Delete ${tab.title}`}
@@ -1599,7 +1929,13 @@ function SettingsView({
       if (!response.ok) throw new Error(response.error);
       setSyncConfig(response.syncConfig ?? null);
       setSyncPassword('');
-      setSyncStatus(enabled ? 'Automatic sync enabled.' : 'Cloud settings saved.');
+      if (enabled) {
+        const synced = await send({ type: 'sync-cloud', direction: 'auto' });
+        if (!synced.ok) throw new Error(synced.error);
+        setSyncStatus(synced.message ?? 'Automatic sync enabled and checked.');
+        const refreshed = await send({ type: 'get-cloud-sync-config' });
+        if (refreshed.ok && refreshed.syncConfig) setSyncConfig(refreshed.syncConfig);
+      } else setSyncStatus('Cloud settings saved.');
     } catch (error) {
       setSyncStatus(error instanceof Error ? error.message : 'Cloud settings could not be saved.');
     }
@@ -1836,6 +2172,7 @@ function EditorDialog({
   target,
   library,
   workspaceId,
+  selectedFolderId,
   onClose,
   onSave,
   onTrash,
@@ -1843,8 +2180,12 @@ function EditorDialog({
   target: EditorTarget;
   library: LibraryState;
   workspaceId: string;
+  selectedFolderId: string;
   onClose: () => void;
-  onSave: (state: LibraryState) => Promise<void>;
+  onSave: (
+    state: LibraryState,
+    entity: Workspace | Folder | Collection | SavedLink | Note,
+  ) => Promise<void>;
   onTrash: (kind: EntityKind, id: string) => Promise<void>;
 }) {
   const plural = target.kind === 'link' ? 'links' : (`${target.kind}s` as keyof LibraryState);
@@ -1872,9 +2213,10 @@ function EditorDialog({
   const [folderId, setFolderId] = useState(
     target.kind === 'workspace' && typedExisting
       ? (typedExisting as Workspace).folderId
-      : (library.workspaces.find((item) => item.id === workspaceId)?.folderId ??
-          active(library.folders)[0]?.id ??
-          ''),
+      : selectedFolderId ||
+          library.workspaces.find((item) => item.id === workspaceId)?.folderId ||
+          active(library.folders)[0]?.id ||
+          '',
   );
   const [editorWorkspaceId, setEditorWorkspaceId] = useState(
     'workspaceId' in (typedExisting ?? {})
@@ -1943,8 +2285,10 @@ function EditorDialog({
     const items = library[plural] as BaseEntity[];
     const nextItems = existing
       ? items.map((item) => (item.id === entity.id ? entity : item))
-      : [...items, entity];
-    await onSave({ ...library, [plural]: nextItems });
+      : target.kind === 'workspace'
+        ? insertWorkspaceNearTop(library.workspaces, entity as Workspace)
+        : [...items, entity];
+    await onSave({ ...library, [plural]: nextItems }, entity);
   };
 
   return (

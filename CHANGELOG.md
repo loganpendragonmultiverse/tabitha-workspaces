@@ -2,6 +2,19 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.9.0 - 2026-08-10
+
+- Kept a permanent, renameable Home workspace first and remembered the selected workspace across
+  the dashboard, popup, background commands, and new captures.
+- Added persistent folder expansion, clear folder targeting, top insertion for new workspaces, and
+  reliable workspace and collection drag data.
+- Added pinning, starring, and starred-only views for workspaces and collections.
+- Added click-to-rename collection headings, including immediate renaming after Save current
+  window.
+- Made saved-tab search results and List-layout tab rows open their individual URLs directly.
+- Made enabled WebDAV sync run immediately when configured and after local library changes, while
+  retaining conflict detection and conditional-write safeguards.
+
 ## 1.8.0 - 2026-08-05
 
 - Made manually captured windows appear first in the workspace's custom collection order.
