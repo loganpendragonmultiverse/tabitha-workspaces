@@ -11,7 +11,13 @@ export interface CloudSyncPublicConfig {
 
 export type BackgroundRequest =
   | { type: 'open-dashboard'; route?: string }
-  | { type: 'capture-window'; workspaceId?: string; name?: string; automatic?: boolean }
+  | {
+      type: 'capture-window';
+      workspaceId?: string;
+      windowId?: number;
+      name?: string;
+      automatic?: boolean;
+    }
   | { type: 'capture-active-link'; workspaceId?: string }
   | { type: 'restore-collection'; collectionId: string }
   | { type: 'open-url'; url: string }

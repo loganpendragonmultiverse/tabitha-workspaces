@@ -56,11 +56,14 @@ const selectedWorkspaceId = async (requested?: string): Promise<string> => {
 
 const captureWindow = async (
   requestedWorkspaceId?: string,
+  windowId?: number,
   name?: string,
   automatic = false,
 ): Promise<Collection> => {
   const workspaceId = await selectedWorkspaceId(requestedWorkspaceId);
-  const tabs = (await browser.tabs.query({ currentWindow: true })) as CapturedBrowserTab[];
+  const tabs = (await browser.tabs.query(
+    windowId === undefined ? { currentWindow: true } : { windowId },
+  )) as CapturedBrowserTab[];
   let created: Collection | undefined;
   await updateLibrary((state) => {
     created = createCollectionFromTabs(
@@ -280,7 +283,8 @@ export default defineBackground(() => {
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === SNAPSHOT_ALARM) void captureWindow(undefined, 'Automatic recovery', true);
+    if (alarm.name === SNAPSHOT_ALARM)
+      void captureWindow(undefined, undefined, 'Automatic recovery', true);
     if (alarm.name === CLOUD_SYNC_ALARM) void syncCloud('auto').catch(() => undefined);
   });
 
@@ -302,6 +306,7 @@ export default defineBackground(() => {
           case 'capture-window': {
             const collection = await captureWindow(
               request.workspaceId,
+              request.windowId,
               request.name,
               request.automatic,
             );

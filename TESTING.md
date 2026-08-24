@@ -21,7 +21,10 @@ expansion after a layout change, top insertion after Save current window, indepe
 Custom/Newest/Oldest/A–Z ordering, sorted-view dragging that returns the workspace to Custom order,
 persistent folder expansion, Home/pinned/starred ordering, new-folder and new-workspace targeting,
 remembered popup capture targeting, inline collection renaming, individual saved-tab opening from
-search and List layout, immediate WebDAV enablement sync, automatic WebDAV upload after a local
+search and List layout, exact collection focus from search, labeled folder/workspace creation,
+the Starred sidebar view, recoverable workspace and collection merges, per-window capture, saving one
+live tab to an existing collection, saved-tab drag and drop between collections, rename-time drag
+suppression, immediate WebDAV enablement sync, automatic WebDAV upload after a local
 library change, legacy `#/sessions` and `#/live` redirects, optional new-tab behavior, top-level
 folder migration, editable tab rows, WebDAV permission prompt, and an intentional sync conflict.
 Store review and signing occur separately from the GitHub release.

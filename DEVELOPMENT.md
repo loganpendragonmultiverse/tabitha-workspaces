@@ -73,6 +73,15 @@ while collection names support direct inline editing after capture. Enabled WebD
 immediately when configured and shortly after each local library write without weakening three-way
 conflict detection.
 
+## Version 1.10 organization feedback release
+
+Version 1.10 completes the remaining organization feedback from Rob Kam. Folder and workspace creation
+are distinct labeled actions, Starred is a first-class sidebar view, and collection search results
+reveal their exact destination. Multi-selection can merge workspaces or collections without permanently
+deleting the superseded containers. The Open windows view can capture any listed window or append one
+open tab to an existing collection, while saved tabs can move between collections by drag and drop.
+Collection containers are not draggable while their inline name editor is active.
+
 ## Version 1.3 feedback release
 
 Version 1.3 incorporates direct user feedback with a versioned data-model migration. Folders are

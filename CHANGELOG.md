@@ -2,6 +2,17 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.10.0 - 2026-08-23
+
+- Separated the folder and workspace creation actions, and promoted Starred to a clear sidebar view.
+- Made collection search results reveal, expand, focus, and scroll to the selected collection.
+- Added recoverable multi-selection merging for workspaces and collections.
+- Added capture controls for every open browser window and a direct way to save one open tab into an
+  existing collection.
+- Added saved-tab drag and drop between collections and disabled collection dragging while its name
+  is being edited.
+- Removed the duplicate dashboard-level Save window action while retaining contextual capture actions.
+
 ## 1.9.0 - 2026-08-10
 
 - Kept a permanent, renameable Home workspace first and remembered the selected workspace across
