@@ -1,6 +1,6 @@
 {
   "name": "tabitha-workspaces",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "private": true,
   "description": "A private, local-first workspace and tab collection manager for Chromium and Firefox.",
   "type": "module",
@@ -25,7 +25,7 @@
     "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:build && npm run lint:firefox && npm run zip"
   },
   "dependencies": {
-    "preact": "10.29.7"
+    "preact": "10.29.8"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",

@@ -222,6 +222,104 @@ export const removeSavedTab = (collection: Collection, tabId: string): Collectio
   tabs: collection.tabs.filter((tab) => tab.id !== tabId).map((tab, order) => ({ ...tab, order })),
 });
 
+export const moveSavedTab = (
+  collections: Collection[],
+  sourceCollectionId: string,
+  tabId: string,
+  targetCollectionId: string,
+): Collection[] => {
+  if (sourceCollectionId === targetCollectionId) return collections;
+  const source = collections.find((item) => item.id === sourceCollectionId && !item.trashedAt);
+  const target = collections.find((item) => item.id === targetCollectionId && !item.trashedAt);
+  const tab = source?.tabs.find((item) => item.id === tabId);
+  if (!source || !target || !tab) return collections;
+  const now = Date.now();
+  return collections.map((item) => {
+    if (item.id === source.id)
+      return {
+        ...item,
+        tabs: item.tabs
+          .filter((savedTab) => savedTab.id !== tabId)
+          .map((savedTab, order) => ({ ...savedTab, order })),
+        updatedAt: now,
+      };
+    if (item.id === target.id)
+      return {
+        ...item,
+        tabs: [...item.tabs, { ...tab, order: item.tabs.length }],
+        updatedAt: now,
+      };
+    return item;
+  });
+};
+
+export const mergeCollections = (
+  state: LibraryState,
+  collectionIds: string[],
+  targetId: string,
+): LibraryState => {
+  const selected = new Set(collectionIds);
+  const target = state.collections.find((item) => item.id === targetId && selected.has(item.id));
+  if (!target || selected.size < 2) return state;
+  const sources = state.collections
+    .filter((item) => selected.has(item.id) && item.id !== targetId && !item.trashedAt)
+    .sort((left, right) => left.order - right.order);
+  if (sources.length === 0) return state;
+  const now = Date.now();
+  const tabs = [target, ...sources]
+    .flatMap((item) => item.tabs)
+    .map((tab, order) => ({
+      ...tab,
+      id: order < target.tabs.length ? tab.id : createId(),
+      order,
+    }));
+  return {
+    ...state,
+    collections: state.collections.map((item) => {
+      if (item.id === targetId) return { ...item, tabs, updatedAt: now };
+      if (selected.has(item.id)) return { ...item, trashedAt: now, updatedAt: now };
+      return item;
+    }),
+  };
+};
+
+export const mergeWorkspaces = (
+  state: LibraryState,
+  workspaceIds: string[],
+  requestedTargetId: string,
+): LibraryState => {
+  const selected = new Set(workspaceIds);
+  const targetId = selected.has(state.settings.homeWorkspaceId)
+    ? state.settings.homeWorkspaceId
+    : requestedTargetId;
+  if (!selected.has(targetId) || selected.size < 2) return state;
+  const now = Date.now();
+  return {
+    ...state,
+    workspaces: state.workspaces.map((item) =>
+      selected.has(item.id) && item.id !== targetId
+        ? { ...item, trashedAt: now, updatedAt: now }
+        : item,
+    ),
+    collections: state.collections.map((item) =>
+      selected.has(item.workspaceId) && item.workspaceId !== targetId
+        ? { ...item, workspaceId: targetId, updatedAt: now }
+        : item,
+    ),
+    links: state.links.map((item) =>
+      selected.has(item.workspaceId) && item.workspaceId !== targetId
+        ? { ...item, workspaceId: targetId, updatedAt: now }
+        : item,
+    ),
+    notes: state.notes.map((item) =>
+      selected.has(item.workspaceId) && item.workspaceId !== targetId
+        ? { ...item, workspaceId: targetId, updatedAt: now }
+        : item,
+    ),
+    settings: { ...state.settings, selectedWorkspaceId: targetId },
+  };
+};
+
 export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
   if (
     ![1, 2, 3].includes(Number(candidate.schemaVersion)) ||

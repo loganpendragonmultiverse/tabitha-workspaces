@@ -19,6 +19,9 @@ import {
 import {
   extractWikiLinks,
   markTrashed,
+  mergeCollections,
+  mergeWorkspaces,
+  moveSavedTab,
   normalizeTags,
   noteBacklinks,
   purgeTrash,
@@ -40,6 +43,7 @@ import type {
   LibraryState,
   Note,
   SavedLink,
+  SavedTab,
   SearchResult,
   SearchScope,
   Settings,
@@ -64,6 +68,9 @@ interface EditorTarget {
   id?: string;
 }
 type PasswordAction = { folder: Folder; mode: 'protect' | 'unlock' | 'remove' };
+type DragPayload =
+  | { kind: 'workspace' | 'collection'; id: string }
+  | { kind: 'tab'; id: string; collectionId: string };
 
 const PRIMARY_NAV: { id: View; label: string; icon: string }[] = [
   { id: 'links', label: 'Saved links', icon: '↗' },
@@ -119,10 +126,11 @@ export function App() {
   const [toast, setToast] = useState('');
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [renamingCollectionId, setRenamingCollectionId] = useState('');
+  const [focusedCollectionId, setFocusedCollectionId] = useState('');
+  const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>([]);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
   const [passwordAction, setPasswordAction] = useState<PasswordAction | null>(null);
-  const [dragged, setDragged] = useState<{ kind: 'workspace' | 'collection'; id: string } | null>(
-    null,
-  );
+  const [dragged, setDragged] = useState<DragPayload | null>(null);
   const importInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -192,8 +200,12 @@ export function App() {
     else setToast(response.error);
   };
 
-  const captureWindow = async (): Promise<void> => {
-    const response = await send({ type: 'capture-window', workspaceId: selectedWorkspaceId });
+  const captureWindow = async (windowId?: number): Promise<void> => {
+    const response = await send({
+      type: 'capture-window',
+      workspaceId: selectedWorkspaceId,
+      ...(windowId === undefined ? {} : { windowId }),
+    });
     setToast(
       response.ok
         ? `Saved ${response.collection?.tabs.length ?? 0} tabs as a collection.`
@@ -293,6 +305,87 @@ export function App() {
     setToast('Collection moved to the selected workspace.');
   };
 
+  const moveTabToCollection = async (targetCollectionId: string): Promise<void> => {
+    if (!library || dragged?.kind !== 'tab') return;
+    const nextCollections = moveSavedTab(
+      library.collections,
+      dragged.collectionId,
+      dragged.id,
+      targetCollectionId,
+    );
+    if (nextCollections === library.collections) return;
+    await persist({ ...library, collections: nextCollections });
+    setDragged(null);
+    setToast('Tab moved to the selected collection.');
+  };
+
+  const saveLiveTabToCollection = async (
+    tab: LiveTab,
+    targetCollectionId: string,
+  ): Promise<void> => {
+    if (!library || !targetCollectionId) return;
+    const target = library.collections.find(
+      (item) => item.id === targetCollectionId && !item.trashedAt,
+    );
+    if (!target) return;
+    const savedTab: SavedTab = {
+      id: createId(),
+      url: tab.url,
+      title: tab.title,
+      ...(tab.favIconUrl ? { faviconUrl: tab.favIconUrl } : {}),
+      pinned: tab.pinned,
+      muted: false,
+      order: target.tabs.length,
+    };
+    await persist({
+      ...library,
+      collections: library.collections.map((item) =>
+        item.id === target.id
+          ? { ...item, tabs: [...item.tabs, savedTab], updatedAt: Date.now() }
+          : item,
+      ),
+    });
+    setToast(`Saved “${tab.title}” to ${target.name}.`);
+  };
+
+  const mergeSelectedWorkspaces = async (): Promise<void> => {
+    if (!library || selectedWorkspaceIds.length < 2) return;
+    const ordered = visibleWorkspaces.filter((item) => selectedWorkspaceIds.includes(item.id));
+    const target =
+      ordered.find((item) => item.id === library.settings.homeWorkspaceId) ?? ordered[0];
+    if (
+      !target ||
+      !confirm(
+        `Merge ${selectedWorkspaceIds.length} workspaces into “${target.name}”? The other workspace shells will move to the recycle bin.`,
+      )
+    )
+      return;
+    await persist(mergeWorkspaces(library, selectedWorkspaceIds, target.id));
+    setSelectedWorkspaceIds([]);
+    setSelectedWorkspaceId(target.id);
+    setToast(`Merged selected workspaces into ${target.name}.`);
+  };
+
+  const mergeSelectedCollections = async (): Promise<void> => {
+    if (!library || selectedCollectionIds.length < 2) return;
+    const target = sortCollections(
+      library.collections.filter(
+        (item) => selectedCollectionIds.includes(item.id) && !item.trashedAt,
+      ),
+      library.settings.collectionSortByWorkspace[selectedWorkspaceId] ?? 'custom',
+    )[0];
+    if (
+      !target ||
+      !confirm(
+        `Merge ${selectedCollectionIds.length} collections into “${target.name}”? The other collection shells will move to the recycle bin.`,
+      )
+    )
+      return;
+    await persist(mergeCollections(library, selectedCollectionIds, target.id));
+    setSelectedCollectionIds([]);
+    setToast(`Merged selected collections into ${target.name}.`);
+  };
+
   const openSearchResult = (result: SearchResult): void => {
     if (result.kind === 'tab' || result.kind === 'link') {
       void send({ type: 'open-url', url: result.url ?? result.detail }).then(
@@ -316,6 +409,19 @@ export function App() {
                 : library.settings.collapsedCollectionIds,
           },
         });
+        if (result.kind === 'collection') {
+          const collectionId = result.id;
+          if (collectionId) {
+            setFocusedCollectionId(collectionId);
+            window.setTimeout(() => {
+              document.getElementById(`collection-${collectionId}`)?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+              });
+              window.setTimeout(() => setFocusedCollectionId(''), 1800);
+            }, 50);
+          }
+        }
       }
     } else if (result.kind === 'folder' && library) {
       setSelectedFolderId(result.id);
@@ -430,28 +536,32 @@ export function App() {
             </button>
           ))}
         </nav>
+        <div class="sidebar-create-actions">
+          <button onClick={() => setEditor({ kind: 'folder' })}>＋ Folder</button>
+          <button
+            disabled={!visibleFolders.some((folder) => !folder.locked)}
+            onClick={() => setEditor({ kind: 'workspace' })}
+          >
+            ＋ Workspace
+          </button>
+        </div>
         <div class="section-label">
           <span>Folders</span>
-          <div>
-            <button
-              class={showStarredOnly ? 'active' : ''}
-              title={showStarredOnly ? 'Show every workspace' : 'Show starred workspaces only'}
-              onClick={() => setShowStarredOnly((value) => !value)}
-            >
-              Star
+          {selectedWorkspaceIds.length >= 2 && (
+            <button class="workspace-merge" onClick={() => void mergeSelectedWorkspaces()}>
+              Merge {selectedWorkspaceIds.length}
             </button>
-            <button title="New folder" onClick={() => setEditor({ kind: 'folder' })}>
-              ＋
-            </button>
-            <button
-              title="New workspace"
-              disabled={!visibleFolders.some((folder) => !folder.locked)}
-              onClick={() => setEditor({ kind: 'workspace' })}
-            >
-              W
-            </button>
-          </div>
+          )}
         </div>
+        <button
+          class={`starred-workspaces${showStarredOnly ? ' active' : ''}`}
+          aria-pressed={showStarredOnly}
+          onClick={() => setShowStarredOnly((value) => !value)}
+        >
+          <span>★</span>
+          <strong>Starred</strong>
+          <small>{active(library.workspaces).filter((item) => item.starred).length}</small>
+        </button>
         <div class="folder-tree">
           {visibleFolders.map((folder) => {
             const collapsed = library.settings.collapsedFolderIds.includes(folder.id);
@@ -561,6 +671,19 @@ export function App() {
                             : handleDrop('workspace', item.id))
                         }
                       >
+                        <input
+                          class="merge-checkbox"
+                          type="checkbox"
+                          aria-label={`Select ${item.name} for merging`}
+                          checked={selectedWorkspaceIds.includes(item.id)}
+                          onChange={(event) =>
+                            setSelectedWorkspaceIds((current) =>
+                              event.currentTarget.checked
+                                ? [...current, item.id]
+                                : current.filter((id) => id !== item.id),
+                            )
+                          }
+                        />
                         <button
                           draggable
                           class={item.id === selectedWorkspaceId ? 'workspace active' : 'workspace'}
@@ -667,9 +790,6 @@ export function App() {
               </div>
             )}
           </div>
-          <button class="button ghost" onClick={() => void captureWindow()}>
-            Save window
-          </button>
           <button
             class="button primary"
             onClick={() =>
@@ -694,6 +814,7 @@ export function App() {
               onCapture={captureWindow}
               onDrag={setDragged}
               onDrop={handleDrop}
+              onTabDrop={moveTabToCollection}
               onUpdate={(collection) =>
                 persist({
                   ...library,
@@ -732,6 +853,10 @@ export function App() {
                 })
               }
               renamingCollectionId={renamingCollectionId}
+              focusedCollectionId={focusedCollectionId}
+              selectedCollectionIds={selectedCollectionIds}
+              onCollectionSelectionChange={setSelectedCollectionIds}
+              onMergeSelected={mergeSelectedCollections}
               onRenameComplete={() => setRenamingCollectionId('')}
               onDismissWelcome={() =>
                 void persist({
@@ -764,6 +889,8 @@ export function App() {
               onCollapsedChange={setCollapsedLiveWindowKeys}
               onRefresh={refreshLiveTabs}
               onCapture={captureWindow}
+              collections={active(library.collections)}
+              onSaveTab={saveLiveTabToCollection}
             />
           )}
           {view === 'trash' && (
@@ -1025,11 +1152,16 @@ function Overview({
   onCapture,
   onDrag,
   onDrop,
+  onTabDrop,
   onUpdate,
   onLayoutChange,
   onSortChange,
   onCollapsedChange,
   renamingCollectionId,
+  focusedCollectionId,
+  selectedCollectionIds,
+  onCollectionSelectionChange,
+  onMergeSelected,
   onRenameComplete,
   onDismissWelcome,
 }: {
@@ -1040,13 +1172,18 @@ function Overview({
   onEdit: (target: EditorTarget) => void;
   onTrash: (kind: EntityKind, id: string) => Promise<void>;
   onCapture: () => Promise<void>;
-  onDrag: (value: { kind: 'collection'; id: string }) => void;
+  onDrag: (value: DragPayload) => void;
   onDrop: (kind: 'collection', id: string) => Promise<void>;
+  onTabDrop: (collectionId: string) => Promise<void>;
   onUpdate: (collection: Collection) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
   onSortChange: (sort: CollectionSortMode) => void;
   onCollapsedChange: (ids: string[]) => void;
   renamingCollectionId: string;
+  focusedCollectionId: string;
+  selectedCollectionIds: string[];
+  onCollectionSelectionChange: (ids: string[]) => void;
+  onMergeSelected: () => Promise<void>;
   onRenameComplete: () => void;
   onDismissWelcome: () => void;
 }) {
@@ -1130,11 +1267,16 @@ function Overview({
         onCapture={onCapture}
         onDrag={onDrag}
         onDrop={onDrop}
+        onTabDrop={onTabDrop}
         onUpdate={onUpdate}
         onLayoutChange={onLayoutChange}
         onSortChange={onSortChange}
         onCollapsedChange={onCollapsedChange}
         renamingCollectionId={renamingCollectionId}
+        focusedCollectionId={focusedCollectionId}
+        selectedCollectionIds={selectedCollectionIds}
+        onCollectionSelectionChange={onCollectionSelectionChange}
+        onMergeSelected={onMergeSelected}
         onRenameComplete={onRenameComplete}
       />
     </>
@@ -1160,11 +1302,16 @@ function Collections({
   onCapture,
   onDrag,
   onDrop,
+  onTabDrop,
   onUpdate,
   onLayoutChange,
   onSortChange,
   onCollapsedChange,
   renamingCollectionId,
+  focusedCollectionId,
+  selectedCollectionIds,
+  onCollectionSelectionChange,
+  onMergeSelected,
   onRenameComplete,
 }: {
   library: LibraryState;
@@ -1173,13 +1320,18 @@ function Collections({
   onEdit: (target: EditorTarget) => void;
   onTrash: (kind: EntityKind, id: string) => Promise<void>;
   onCapture: () => Promise<void>;
-  onDrag: (value: { kind: 'collection'; id: string }) => void;
+  onDrag: (value: DragPayload) => void;
   onDrop: (kind: 'collection', id: string) => Promise<void>;
+  onTabDrop: (collectionId: string) => Promise<void>;
   onUpdate: (collection: Collection) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
   onSortChange: (sort: CollectionSortMode) => void;
   onCollapsedChange: (ids: string[]) => void;
   renamingCollectionId: string;
+  focusedCollectionId: string;
+  selectedCollectionIds: string[];
+  onCollectionSelectionChange: (ids: string[]) => void;
+  onMergeSelected: () => Promise<void>;
   onRenameComplete: () => void;
 }) {
   const [showStarredOnly, setShowStarredOnly] = useState(false);
@@ -1259,6 +1411,11 @@ function Collections({
           >
             {showStarredOnly ? 'Show all' : 'Starred only'}
           </button>
+          {selectedCollectionIds.length >= 2 && (
+            <button class="button ghost" onClick={() => void onMergeSelected()}>
+              Merge {selectedCollectionIds.length}
+            </button>
+          )}
           <button class="button primary" onClick={() => void onCapture()}>
             Save current window
           </button>
@@ -1282,6 +1439,15 @@ function Collections({
               item={item}
               layout={library.settings.sessionLayout}
               collapsed={collapsed.has(item.id)}
+              focused={focusedCollectionId === item.id}
+              selected={selectedCollectionIds.includes(item.id)}
+              onSelectedChange={(selected) =>
+                onCollectionSelectionChange(
+                  selected
+                    ? [...selectedCollectionIds, item.id]
+                    : selectedCollectionIds.filter((id) => id !== item.id),
+                )
+              }
               onToggle={() => toggle(item.id)}
               onSave={onUpdate}
               onRestore={onRestore}
@@ -1290,7 +1456,9 @@ function Collections({
               renameRequested={renamingCollectionId === item.id}
               onRenameComplete={onRenameComplete}
               onDragStart={() => onDrag({ kind: 'collection', id: item.id })}
+              onTabDragStart={(tabId) => onDrag({ kind: 'tab', id: tabId, collectionId: item.id })}
               onDrop={() => void onDrop('collection', item.id)}
+              onTabDrop={() => void onTabDrop(item.id)}
             />
           ))}
         </div>
@@ -1303,6 +1471,9 @@ function CollectionGroup({
   item,
   layout,
   collapsed,
+  focused,
+  selected,
+  onSelectedChange,
   onToggle,
   onSave,
   onRestore,
@@ -1311,11 +1482,16 @@ function CollectionGroup({
   renameRequested,
   onRenameComplete,
   onDragStart,
+  onTabDragStart,
   onDrop,
+  onTabDrop,
 }: {
   item: Collection;
   layout: Settings['sessionLayout'];
   collapsed: boolean;
+  focused: boolean;
+  selected: boolean;
+  onSelectedChange: (selected: boolean) => void;
   onToggle: () => void;
   onSave: (collection: Collection) => Promise<void>;
   onRestore: (collection: Collection) => Promise<void>;
@@ -1324,7 +1500,9 @@ function CollectionGroup({
   renameRequested: boolean;
   onRenameComplete: () => void;
   onDragStart: () => void;
+  onTabDragStart: (tabId: string) => void;
   onDrop: () => void;
+  onTabDrop: () => void;
 }) {
   const [renaming, setRenaming] = useState(renameRequested);
   const [name, setName] = useState(item.name);
@@ -1352,14 +1530,24 @@ function CollectionGroup({
         renameRequested={renameRequested}
         onRenameComplete={onRenameComplete}
         onDragStart={onDragStart}
+        onTabDragStart={onTabDragStart}
         onDrop={onDrop}
+        onTabDrop={onTabDrop}
+        focused={focused}
+        selected={selected}
+        onSelectedChange={onSelectedChange}
       />
     );
   return (
     <section
-      class="collection-group"
-      draggable
+      id={`collection-${item.id}`}
+      class={`collection-group${focused ? ' search-focus' : ''}`}
+      draggable={!renaming}
       onDragStart={(event) => {
+        if (renaming) {
+          event.preventDefault();
+          return;
+        }
         if (event.dataTransfer) {
           event.dataTransfer.effectAllowed = 'move';
           event.dataTransfer.setData('text/plain', item.id);
@@ -1367,10 +1555,22 @@ function CollectionGroup({
         onDragStart();
       }}
       onDragOver={(event) => event.preventDefault()}
-      onDrop={onDrop}
+      onDrop={(event) => {
+        event.stopPropagation();
+        if (event.dataTransfer?.types.includes('application/x-tabitha-tab')) onTabDrop();
+        else onDrop();
+      }}
     >
       <header class="collection-header" onClick={onToggle}>
         <div>
+          <input
+            class="merge-checkbox"
+            type="checkbox"
+            aria-label={`Select ${item.name} for merging`}
+            checked={selected}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => onSelectedChange(event.currentTarget.checked)}
+          />
           <button class="collection-chevron" aria-label={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? '›' : '⌄'}
           </button>
@@ -1380,6 +1580,7 @@ function CollectionGroup({
               autoFocus
               value={name}
               onClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
               onInput={(event) => setName(event.currentTarget.value)}
               onBlur={() => void finishRename()}
               onKeyDown={(event) => event.key === 'Enter' && void finishRename()}
@@ -1424,7 +1625,18 @@ function CollectionGroup({
             <p class="empty-collection">This collection has no saved tabs.</p>
           ) : (
             item.tabs.map((tab) => (
-              <a class="saved-tab-tile" href={tab.url} target="_blank" rel="noreferrer">
+              <a
+                class="saved-tab-tile"
+                href={tab.url}
+                target="_blank"
+                rel="noreferrer"
+                draggable
+                onDragStart={(event) => {
+                  event.stopPropagation();
+                  event.dataTransfer?.setData('application/x-tabitha-tab', tab.id);
+                  onTabDragStart(tab.id);
+                }}
+              >
                 <span class="tab-favicon">
                   {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
                 </span>
@@ -1444,6 +1656,9 @@ function CollectionGroup({
 function SessionListEditor({
   item,
   collapsed,
+  focused,
+  selected,
+  onSelectedChange,
   onToggle,
   onSave,
   onRestore,
@@ -1452,10 +1667,15 @@ function SessionListEditor({
   renameRequested,
   onRenameComplete,
   onDragStart,
+  onTabDragStart,
   onDrop,
+  onTabDrop,
 }: {
   item: Collection;
   collapsed: boolean;
+  focused: boolean;
+  selected: boolean;
+  onSelectedChange: (selected: boolean) => void;
   onToggle: () => void;
   onSave: (collection: Collection) => Promise<void>;
   onRestore: (collection: Collection) => Promise<void>;
@@ -1464,7 +1684,9 @@ function SessionListEditor({
   renameRequested: boolean;
   onRenameComplete: () => void;
   onDragStart: () => void;
+  onTabDragStart: (tabId: string) => void;
   onDrop: () => void;
+  onTabDrop: () => void;
 }) {
   const [tabs, setTabs] = useState(item.tabs);
   const [dirty, setDirty] = useState(false);
@@ -1504,9 +1726,14 @@ function SessionListEditor({
   };
   return (
     <article
-      class="session-list-group"
-      draggable
+      id={`collection-${item.id}`}
+      class={`session-list-group${focused ? ' search-focus' : ''}`}
+      draggable={!renaming}
       onDragStart={(event) => {
+        if (renaming) {
+          event.preventDefault();
+          return;
+        }
         if (event.dataTransfer) {
           event.dataTransfer.effectAllowed = 'move';
           event.dataTransfer.setData('text/plain', item.id);
@@ -1514,10 +1741,22 @@ function SessionListEditor({
         onDragStart();
       }}
       onDragOver={(event) => event.preventDefault()}
-      onDrop={onDrop}
+      onDrop={(event) => {
+        event.stopPropagation();
+        if (event.dataTransfer?.types.includes('application/x-tabitha-tab')) onTabDrop();
+        else onDrop();
+      }}
     >
       <header onClick={onToggle}>
         <div>
+          <input
+            class="merge-checkbox"
+            type="checkbox"
+            aria-label={`Select ${item.name} for merging`}
+            checked={selected}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => onSelectedChange(event.currentTarget.checked)}
+          />
           <button class="collection-chevron" aria-label={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? '›' : '⌄'}
           </button>
@@ -1527,6 +1766,7 @@ function SessionListEditor({
               autoFocus
               value={name}
               onClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
               onInput={(event) => setName(event.currentTarget.value)}
               onBlur={() => void finishRename()}
               onKeyDown={(event) => event.key === 'Enter' && void finishRename()}
@@ -1566,7 +1806,15 @@ function SessionListEditor({
       </header>
       {!collapsed &&
         tabs.map((tab) => (
-          <div class="editable-tab-row">
+          <div
+            class="editable-tab-row"
+            draggable
+            onDragStart={(event) => {
+              event.stopPropagation();
+              event.dataTransfer?.setData('application/x-tabitha-tab', tab.id);
+              onTabDragStart(tab.id);
+            }}
+          >
             <span class="tab-favicon">
               {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
             </span>
@@ -1729,16 +1977,20 @@ function Notes({
 
 function LiveTabs({
   tabs,
+  collections,
   collapsedWindowKeys,
   onCollapsedChange,
   onRefresh,
   onCapture,
+  onSaveTab,
 }: {
   tabs: LiveTab[];
+  collections: Collection[];
   collapsedWindowKeys: string[];
   onCollapsedChange: (keys: string[]) => void;
   onRefresh: () => Promise<void>;
-  onCapture: () => Promise<void>;
+  onCapture: (windowId?: number) => Promise<void>;
+  onSaveTab: (tab: LiveTab, collectionId: string) => Promise<void>;
 }) {
   const windows = groupLiveTabs(tabs);
   const collapsed = new Set(collapsedWindowKeys);
@@ -1756,9 +2008,6 @@ function LiveTabs({
       <PageHeading eyebrow="Current browser state" title="Open windows">
         <button class="button ghost" onClick={() => void onRefresh()}>
           Refresh
-        </button>
-        <button class="button primary" onClick={() => void onCapture()}>
-          Save current window
         </button>
       </PageHeading>
       <p class="window-summary">
@@ -1778,39 +2027,65 @@ function LiveTabs({
         const panelId = `live-window-${windowGroup.key.replace(/[^a-z0-9-]/gi, '-')}`;
         return (
           <section class={`window-card${isCollapsed ? ' collapsed' : ''}`}>
-            <button
-              class="window-title"
-              aria-expanded={!isCollapsed}
-              aria-controls={panelId}
-              onClick={() => toggleWindow(windowGroup.key)}
-            >
-              <div>
-                <span class="window-chevron" aria-hidden="true">
-                  {isCollapsed ? '›' : '⌄'}
-                </span>
-                <h2>Window {index + 1}</h2>
-              </div>
-              <span>{windowGroup.tabs.length} tabs</span>
-            </button>
+            <div class="window-card-heading">
+              <button
+                class="window-title"
+                aria-expanded={!isCollapsed}
+                aria-controls={panelId}
+                onClick={() => toggleWindow(windowGroup.key)}
+              >
+                <div>
+                  <span class="window-chevron" aria-hidden="true">
+                    {isCollapsed ? '›' : '⌄'}
+                  </span>
+                  <h2>Window {index + 1}</h2>
+                </div>
+                <span>{windowGroup.tabs.length} tabs</span>
+              </button>
+              <button
+                class="button primary save-live-window"
+                onClick={() => void onCapture(windowGroup.tabs[0]?.windowId)}
+              >
+                Save this window
+              </button>
+            </div>
             {!isCollapsed && (
               <div id={panelId}>
                 {windowGroup.tabs.map((tab) => (
-                  <button
-                    class="live-tab"
-                    onClick={() => {
-                      if (tab.id !== undefined) void browser.tabs.update(tab.id, { active: true });
-                      if (tab.windowId !== undefined)
-                        void browser.windows.update(tab.windowId, { focused: true });
-                    }}
-                  >
-                    <span>{tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : '□'}</span>
-                    <div>
-                      <strong>{tab.title}</strong>
-                      <small>{tab.url}</small>
-                    </div>
-                    {tab.pinned && <em>Pinned</em>}
-                    {tab.active && <i>Active</i>}
-                  </button>
+                  <div class="live-tab-row">
+                    <button
+                      class="live-tab"
+                      onClick={() => {
+                        if (tab.id !== undefined)
+                          void browser.tabs.update(tab.id, { active: true });
+                        if (tab.windowId !== undefined)
+                          void browser.windows.update(tab.windowId, { focused: true });
+                      }}
+                    >
+                      <span>{tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : '□'}</span>
+                      <div>
+                        <strong>{tab.title}</strong>
+                        <small>{tab.url}</small>
+                      </div>
+                      {tab.pinned && <em>Pinned</em>}
+                      {tab.active && <i>Active</i>}
+                    </button>
+                    <select
+                      class="save-tab-target"
+                      aria-label={`Save ${tab.title} to a collection`}
+                      value=""
+                      onChange={(event) => {
+                        const targetId = event.currentTarget.value;
+                        if (targetId) void onSaveTab(tab, targetId);
+                        event.currentTarget.value = '';
+                      }}
+                    >
+                      <option value="">Save to collection…</option>
+                      {collections.map((collection) => (
+                        <option value={collection.id}>{collection.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 ))}
               </div>
             )}

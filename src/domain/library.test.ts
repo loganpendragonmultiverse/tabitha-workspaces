@@ -15,6 +15,9 @@ import {
   extractWikiLinks,
   isRestorableUrl,
   markTrashed,
+  mergeCollections,
+  mergeWorkspaces,
+  moveSavedTab,
   normalizeLibrary,
   normalizeTags,
   noteBacklinks,
@@ -249,6 +252,52 @@ describe('ordering and recycle bin', () => {
     expect(purged.collections).toEqual([]);
     expect(purged.links).toEqual([]);
     expect(purged.notes).toEqual([]);
+  });
+});
+
+describe('collection and workspace organization', () => {
+  it('moves a saved tab between collections without mutating the source value', () => {
+    const state = fixture();
+    const source = state.collections[0]!;
+    const target = { ...source, id: 'collection-2', name: 'Reading', tabs: [], order: 1 };
+    const moved = moveSavedTab([source, target], source.id, source.tabs[0]!.id, target.id);
+    expect(moved[0]!.tabs).toHaveLength(source.tabs.length - 1);
+    expect(moved[1]!.tabs[0]?.url).toBe(source.tabs[0]!.url);
+    expect(source.tabs).toHaveLength(2);
+  });
+
+  it('merges selected collections into a recoverable target', () => {
+    const state = fixture();
+    const source = state.collections[0]!;
+    const second = {
+      ...source,
+      id: 'collection-2',
+      name: 'Reading',
+      tabs: [{ ...source.tabs[0]!, id: 'second-tab', order: 0 }],
+      order: 1,
+    };
+    const merged = mergeCollections(
+      { ...state, collections: [source, second] },
+      [source.id, second.id],
+      source.id,
+    );
+    expect(merged.collections[0]!.tabs).toHaveLength(source.tabs.length + 1);
+    expect(merged.collections[1]!.trashedAt).toBeTypeOf('number');
+  });
+
+  it('merges workspace content into Home and soft-deletes the source', () => {
+    const state = fixture();
+    const home = state.workspaces[0]!;
+    const second = { ...home, id: 'workspace-2', name: 'Work', order: 1 };
+    const movedCollection = { ...state.collections[0]!, workspaceId: second.id };
+    const merged = mergeWorkspaces(
+      { ...state, workspaces: [home, second], collections: [movedCollection] },
+      [home.id, second.id],
+      second.id,
+    );
+    expect(merged.collections[0]!.workspaceId).toBe(home.id);
+    expect(merged.workspaces[1]!.trashedAt).toBeTypeOf('number');
+    expect(merged.settings.selectedWorkspaceId).toBe(home.id);
   });
 });
 
