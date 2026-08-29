@@ -55,6 +55,27 @@ header button {
   background: none;
   color: #888ba1;
 }
+.save-destination {
+  margin: -5px 0 11px;
+  display: grid;
+  gap: 5px;
+}
+.save-destination span {
+  color: #62657a;
+  font-size: 9px;
+  font-weight: 700;
+}
+.save-destination select {
+  width: 100%;
+  padding: 8px 10px;
+  color: #20223a;
+  background: #fff;
+  border: 1px solid #cfd2e3;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
 .quick {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -225,9 +246,13 @@ header button {
     color: #f4f4fa;
   }
   .quick button,
-  .recent {
+  .recent,
+  .save-destination select {
     background: #20232f;
     border-color: #343747;
+  }
+  .save-destination select {
+    color: #f4f4fa;
   }
   .recent-item {
     border-color: #343747;

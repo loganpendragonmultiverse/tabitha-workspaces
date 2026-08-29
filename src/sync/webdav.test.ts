@@ -29,7 +29,7 @@ describe('WebDAV synchronization', () => {
     vi.stubGlobal('fetch', fetchMock);
     const library = createDefaultState();
 
-    await expect(synchronizeWebDav(config, library, 'upload')).resolves.toMatchObject({
+    await expect(synchronizeWebDav(config, library, 'auto')).resolves.toMatchObject({
       action: 'uploaded',
       library,
       etag: '"new"',

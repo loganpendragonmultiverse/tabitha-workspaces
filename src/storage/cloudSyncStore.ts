@@ -34,7 +34,9 @@ export const setCloudSyncConfig = async (
 ): Promise<CloudSyncConfig> => {
   const current = await getCloudSyncConfig();
   const { lastError, ...values } = next;
-  const endpointChanged = current.url !== next.url || current.username !== next.username;
+  const credentialsChanged = Boolean(next.password && next.password !== current.password);
+  const endpointChanged =
+    current.url !== next.url || current.username !== next.username || credentialsChanged;
   const config: CloudSyncConfig = {
     ...current,
     ...values,

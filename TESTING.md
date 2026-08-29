@@ -27,4 +27,10 @@ live tab to an existing collection, saved-tab drag and drop between collections,
 suppression, immediate WebDAV enablement sync, automatic WebDAV upload after a local
 library change, legacy `#/sessions` and `#/live` redirects, optional new-tab behavior, top-level
 folder migration, editable tab rows, WebDAV permission prompt, and an intentional sync conflict.
+For version 1.11, also verify newest-first recycle-bin ordering, UK dates, direct saved-tab removal,
+top insertion after empty collection creation, drag-edge auto-scroll with unchanged edge drops,
+title/URL persistence on blur and Enter, first-enable Koofr/WebDAV file creation without a false
+conflict, explicit Home starring, the popup and dashboard save-destination labels, and the New window
+action from collection and tab search results. Keep workspace/collection merge and explicit
+other-window capture in the regression pass.
 Store review and signing occur separately from the GitHub release.

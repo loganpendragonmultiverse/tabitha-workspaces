@@ -19,7 +19,7 @@ export type BackgroundRequest =
       automatic?: boolean;
     }
   | { type: 'capture-active-link'; workspaceId?: string }
-  | { type: 'restore-collection'; collectionId: string }
+  | { type: 'restore-collection'; collectionId: string; newWindow?: boolean }
   | { type: 'open-url'; url: string }
   | { type: 'get-live-tabs' }
   | { type: 'get-cloud-sync-config' }

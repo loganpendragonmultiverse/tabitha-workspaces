@@ -484,6 +484,24 @@ main {
 .search-results button:hover {
   background: var(--surface-2);
 }
+.search-result-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+}
+.search-results .search-result-main {
+  min-width: 0;
+}
+.search-results .search-result-window {
+  width: auto;
+  display: block;
+  padding: 8px 9px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
 .search-results strong {
   font-size: 13px;
 }
@@ -792,6 +810,14 @@ main {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
 }
+.save-destination {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.save-destination strong {
+  color: var(--text);
+}
 .collection-controls {
   display: flex;
   justify-content: flex-end;
@@ -894,25 +920,55 @@ main {
   gap: 7px;
 }
 .saved-tab-tile {
+  position: relative;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
+  padding: 0;
   color: var(--text);
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: 10px;
   text-decoration: none;
 }
+.saved-tab-link {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 31px 12px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.saved-tab-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #c73545;
+  background: color-mix(in srgb, #c73545 10%, var(--surface));
+  border: 0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+.saved-tab-remove:hover {
+  color: #fff;
+  background: #c73545;
+}
 .saved-tab-compact .saved-tab-tile {
-  padding: 7px 9px;
   border-radius: 7px;
+}
+.saved-tab-compact .saved-tab-link {
+  padding: 7px 31px 7px 9px;
 }
 .saved-tab-tile:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
-.saved-tab-tile > span:last-child {
+.saved-tab-link > span:last-child {
   min-width: 0;
 }
 .saved-tab-tile strong,

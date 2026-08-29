@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.10.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.10.0/tabitha-workspaces-1.10.0-chrome.zip)
-- [Download Tabitha Workspaces 1.10.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.10.0/tabitha-workspaces-1.10.0-firefox.zip)
+- [Download Tabitha Workspaces 1.11.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.11.0/tabitha-workspaces-1.11.0-chrome.zip)
+- [Download Tabitha Workspaces 1.11.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.11.0/tabitha-workspaces-1.11.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -31,6 +31,7 @@ After downloading, follow the short browser-specific steps in
 - Searches workspace names, folders, collections, saved tabs, URLs, notes, and tags, with direct
   Workspaces, Collections, and URLs filters.
 - Soft-deletes workspaces, folders, collections, links, and notes into a recycle bin.
+- Shows the newest recycle-bin item first and formats saved dates day-first for UK readers.
 - Sorts each workspace's collections by Custom, Newest added, Oldest added, or A–Z order.
 - Reorders workspaces and collections with drag and drop; dragging a sorted collection view
   preserves the visible sequence as the new Custom order.
@@ -42,10 +43,14 @@ After downloading, follow the short browser-specific steps in
   List layout.
 - Moves collections between workspaces by dragging them onto the workspace sidebar or editing them.
 - Moves individual saved tabs between collections with drag and drop.
+- Removes one saved tab directly from its collection and persists inline tab edits when focus leaves
+  the field or Enter is pressed.
 - Saves any currently open browser window as a collection and saves an individual open tab into an
   existing collection without switching windows.
 - Merges selected workspaces or collections while keeping the superseded containers recoverable in
   the recycle bin.
+- Auto-scrolls the page when a collection is dragged near the top or bottom edge.
+- Opens a search result's containing collection in a new browser window on request.
 - Switches saved collections between card, compact, and editable tab-row layouts.
 - Expands or collapses individual collections by clicking their headings, with persistent
   expand-all and collapse-all controls.
@@ -125,8 +130,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.10.0-chrome.zip`
-- `.output/tabitha-workspaces-1.10.0-firefox.zip`
+- `.output/tabitha-workspaces-1.11.0-chrome.zip`
+- `.output/tabitha-workspaces-1.11.0-firefox.zip`
 
 ## Architecture
 

@@ -7,8 +7,14 @@ import type {
   LiveTab,
 } from '../../src/browser/messages';
 import { createId } from '../../src/domain/defaults';
+import { formatUkDate } from '../../src/domain/dateFormat';
 import { applyWorkspaceLayout } from '../../src/domain/collectionView';
-import { reorderVisibleCollections, sortCollections } from '../../src/domain/collectionOrder';
+import {
+  insertCollectionAtTop,
+  reorderVisibleCollections,
+  sortCollections,
+} from '../../src/domain/collectionOrder';
+import { dragAutoScrollDelta } from '../../src/domain/dragAutoScroll';
 import {
   mergeFolderExport,
   parseFolderExport,
@@ -94,7 +100,7 @@ const timeLabel = (timestamp?: number): string => {
   if (delta < 60_000) return 'Just now';
   if (delta < 3_600_000) return `${Math.floor(delta / 60_000)}m ago`;
   if (delta < 86_400_000) return `${Math.floor(delta / 3_600_000)}h ago`;
-  return new Date(timestamp).toLocaleDateString();
+  return formatUkDate(timestamp);
 };
 
 const download = (filename: string, contents: string): void => {
@@ -162,6 +168,16 @@ export function App() {
     const timeout = window.setTimeout(() => setToast(''), 3200);
     return () => window.clearTimeout(timeout);
   }, [toast]);
+
+  useEffect(() => {
+    if (!dragged) return;
+    const autoScroll = (event: DragEvent): void => {
+      const delta = dragAutoScrollDelta(event.clientY, window.innerHeight);
+      if (delta) window.scrollBy({ top: delta, behavior: 'auto' });
+    };
+    window.addEventListener('dragover', autoScroll);
+    return () => window.removeEventListener('dragover', autoScroll);
+  }, [dragged]);
 
   useEffect(() => {
     if (!library) return;
@@ -436,6 +452,23 @@ export function App() {
     setQuery('');
   };
 
+  const openSearchCollectionInNewWindow = (result: SearchResult): void => {
+    const collectionId = result.kind === 'collection' ? result.id : result.parentId;
+    const collection = library?.collections.find(
+      (item) => item.id === collectionId && !item.trashedAt,
+    );
+    if (!collection) return;
+    if (
+      library?.settings.confirmBeforeRestore &&
+      !confirm(`Open “${collection.name}” with ${collection.tabs.length} tabs in a new window?`)
+    )
+      return;
+    void send({ type: 'restore-collection', collectionId: collection.id, newWindow: true }).then(
+      (response) =>
+        setToast(response.ok ? (response.message ?? 'Collection opened.') : response.error),
+    );
+  };
+
   const importBackup = async (file?: File): Promise<void> => {
     if (!file || !library) return;
     try {
@@ -486,10 +519,7 @@ export function App() {
       </div>
     );
   const visibleWorkspaces = sortWorkspaces(
-    active(library.workspaces).filter(
-      (workspace) =>
-        !showStarredOnly || workspace.starred || workspace.id === library.settings.homeWorkspaceId,
-    ),
+    active(library.workspaces).filter((workspace) => !showStarredOnly || workspace.starred),
     library.settings.homeWorkspaceId,
   );
   const visibleFolders = active(library.folders);
@@ -780,11 +810,22 @@ export function App() {
                   <p>No saved content matched.</p>
                 ) : (
                   searchResults.slice(0, 50).map((result) => (
-                    <button onClick={() => openSearchResult(result)}>
-                      <span class="result-kind">{result.kind}</span>
-                      <strong>{result.name}</strong>
-                      <small>{result.detail.slice(0, 90)}</small>
-                    </button>
+                    <div class="search-result-row">
+                      <button class="search-result-main" onClick={() => openSearchResult(result)}>
+                        <span class="result-kind">{result.kind}</span>
+                        <strong>{result.name}</strong>
+                        <small>{result.detail.slice(0, 90)}</small>
+                      </button>
+                      {(result.kind === 'collection' || result.kind === 'tab') && (
+                        <button
+                          class="search-result-window"
+                          title="Open this collection in a new window"
+                          onClick={() => openSearchCollectionInNewWindow(result)}
+                        >
+                          New window
+                        </button>
+                      )}
+                    </div>
                   ))
                 )}
               </div>
@@ -1416,6 +1457,10 @@ function Collections({
               Merge {selectedCollectionIds.length}
             </button>
           )}
+          <span class="save-destination">
+            Save to{' '}
+            <strong>{library.workspaces.find((item) => item.id === workspaceId)?.name}</strong>
+          </span>
           <button class="button primary" onClick={() => void onCapture()}>
             Save current window
           </button>
@@ -1625,11 +1670,8 @@ function CollectionGroup({
             <p class="empty-collection">This collection has no saved tabs.</p>
           ) : (
             item.tabs.map((tab) => (
-              <a
+              <div
                 class="saved-tab-tile"
-                href={tab.url}
-                target="_blank"
-                rel="noreferrer"
                 draggable
                 onDragStart={(event) => {
                   event.stopPropagation();
@@ -1637,14 +1679,33 @@ function CollectionGroup({
                   onTabDragStart(tab.id);
                 }}
               >
-                <span class="tab-favicon">
-                  {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
-                </span>
-                <span>
-                  <strong>{tab.title}</strong>
-                  <small>{tab.url}</small>
-                </span>
-              </a>
+                <a class="saved-tab-link" href={tab.url} target="_blank" rel="noreferrer">
+                  <span class="tab-favicon">
+                    {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
+                  </span>
+                  <span>
+                    <strong>{tab.title}</strong>
+                    <small>{tab.url}</small>
+                  </span>
+                </a>
+                <button
+                  class="saved-tab-remove"
+                  draggable={false}
+                  aria-label={`Remove ${tab.title} from ${item.name}`}
+                  title="Remove this tab from the collection"
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void onSave({
+                      ...removeSavedTab(item, tab.id),
+                      updatedAt: Date.now(),
+                    });
+                  }}
+                >
+                  ×
+                </button>
+              </div>
             ))
           )}
         </div>
@@ -1689,10 +1750,11 @@ function SessionListEditor({
   onTabDrop: () => void;
 }) {
   const [tabs, setTabs] = useState(item.tabs);
-  const [dirty, setDirty] = useState(false);
   const [renaming, setRenaming] = useState(renameRequested);
   const [name, setName] = useState(item.name);
-  useEffect(() => setTabs(item.tabs), [item]);
+  useEffect(() => {
+    setTabs(item.tabs);
+  }, [item.id, item.updatedAt]);
   useEffect(() => {
     if (renameRequested) setRenaming(true);
   }, [renameRequested]);
@@ -1706,10 +1768,9 @@ function SessionListEditor({
   };
   const changeTab = (id: string, change: { title?: string; url?: string }): void => {
     setTabs((current) => updateSavedTab({ ...item, tabs: current }, id, change).tabs);
-    setDirty(true);
   };
-  const save = async (): Promise<void> => {
-    for (const tab of tabs) {
+  const save = async (nextTabs = tabs): Promise<void> => {
+    for (const tab of nextTabs) {
       try {
         new URL(tab.url);
       } catch {
@@ -1719,10 +1780,9 @@ function SessionListEditor({
     }
     await onSave({
       ...item,
-      tabs: tabs.map((tab, order) => ({ ...tab, order })),
+      tabs: nextTabs.map((tab, order) => ({ ...tab, order })),
       updatedAt: Date.now(),
     });
-    setDirty(false);
   };
   return (
     <article
@@ -1796,7 +1856,6 @@ function SessionListEditor({
           >
             {item.starred ? 'Starred' : 'Star'}
           </button>
-          {dirty && <button onClick={() => void save()}>Save changes</button>}
           <button onClick={() => void onRestore(item)}>Restore</button>
           <button onClick={onEdit}>Edit</button>
           <button class="danger" onClick={onTrash}>
@@ -1822,12 +1881,26 @@ function SessionListEditor({
               aria-label="Tab title"
               value={tab.title}
               onInput={(event) => changeTab(tab.id, { title: event.currentTarget.value })}
+              onBlur={(event) => {
+                const nextTabs = updateSavedTab({ ...item, tabs }, tab.id, {
+                  title: event.currentTarget.value,
+                }).tabs;
+                void save(nextTabs);
+              }}
+              onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
             />
             <input
               type="url"
               aria-label="Tab URL"
               value={tab.url}
               onInput={(event) => changeTab(tab.id, { url: event.currentTarget.value })}
+              onBlur={(event) => {
+                const nextTabs = updateSavedTab({ ...item, tabs }, tab.id, {
+                  url: event.currentTarget.value,
+                }).tabs;
+                void save(nextTabs);
+              }}
+              onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
             />
             <button
               class="tab-open"
@@ -1841,8 +1914,9 @@ function SessionListEditor({
               class="tab-delete"
               aria-label={`Delete ${tab.title}`}
               onClick={() => {
-                setTabs((current) => removeSavedTab({ ...item, tabs: current }, tab.id).tabs);
-                setDirty(true);
+                const nextTabs = removeSavedTab({ ...item, tabs }, tab.id).tabs;
+                setTabs(nextTabs);
+                void save(nextTabs);
               }}
             >
               ×
@@ -2121,7 +2195,7 @@ function Trash({
     ...library.notes
       .filter((item) => item.trashedAt)
       .map((item) => ({ kind: 'note' as const, item })),
-  ];
+  ].sort((left, right) => (right.item.trashedAt ?? 0) - (left.item.trashedAt ?? 0));
   return (
     <>
       <PageHeading eyebrow="Soft-deleted content" title="Recycle bin">
@@ -2196,21 +2270,18 @@ function SettingsView({
         type: 'save-cloud-sync-config',
         config: {
           enabled,
-          url: syncUrl,
-          username: syncUsername,
+          url: syncUrl.trim(),
+          username: syncUsername.trim(),
           ...(syncPassword ? { password: syncPassword } : {}),
         },
       });
       if (!response.ok) throw new Error(response.error);
       setSyncConfig(response.syncConfig ?? null);
       setSyncPassword('');
-      if (enabled) {
-        const synced = await send({ type: 'sync-cloud', direction: 'auto' });
-        if (!synced.ok) throw new Error(synced.error);
-        setSyncStatus(synced.message ?? 'Automatic sync enabled and checked.');
-        const refreshed = await send({ type: 'get-cloud-sync-config' });
-        if (refreshed.ok && refreshed.syncConfig) setSyncConfig(refreshed.syncConfig);
-      } else setSyncStatus('Cloud settings saved.');
+      setSyncStatus(
+        response.message ??
+          (enabled ? 'Automatic sync enabled and checked.' : 'Cloud settings saved.'),
+      );
     } catch (error) {
       setSyncStatus(error instanceof Error ? error.message : 'Cloud settings could not be saved.');
     }
@@ -2562,8 +2633,20 @@ function EditorDialog({
       ? items.map((item) => (item.id === entity.id ? entity : item))
       : target.kind === 'workspace'
         ? insertWorkspaceNearTop(library.workspaces, entity as Workspace)
-        : [...items, entity];
-    await onSave({ ...library, [plural]: nextItems }, entity);
+        : target.kind === 'collection'
+          ? insertCollectionAtTop(library.collections, entity as Collection)
+          : [...items, entity];
+    const nextSettings =
+      !existing && target.kind === 'collection'
+        ? {
+            ...library.settings,
+            collectionSortByWorkspace: {
+              ...library.settings.collectionSortByWorkspace,
+              [(entity as Collection).workspaceId]: 'custom' as const,
+            },
+          }
+        : library.settings;
+    await onSave({ ...library, [plural]: nextItems, settings: nextSettings }, entity);
   };
 
   return (
