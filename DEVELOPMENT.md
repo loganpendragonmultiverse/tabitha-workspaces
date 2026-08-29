@@ -82,6 +82,18 @@ deleting the superseded containers. The Open windows view can capture any listed
 open tab to an existing collection, while saved tabs can move between collections by drag and drop.
 Collection containers are not draggable while their inline name editor is active.
 
+## Version 1.11 feedback reliability release
+
+Version 1.11 applies Rob Kam's August 27 follow-up without changing the library schema. Recycle-bin
+and date presentation are deterministic, saved tabs can be removed directly, inline tab edits save
+reliably, and new collections become immediately visible at the top of Custom order. Collection drag
+operations auto-scroll near viewport edges while retaining every existing drop target. Home follows
+the same explicit starring rule as other workspaces, window capture names its destination more clearly,
+and search can restore a containing collection into a new window. WebDAV Save and enable is one
+background-owned configuration-and-sync operation; missing remote files are created on that first
+automatic sync, while credential changes clear stale common-version metadata without weakening real
+three-way conflict detection. Workspace/collection merging and other-window capture remain supported.
+
 ## Version 1.3 feedback release
 
 Version 1.3 incorporates direct user feedback with a versioned data-model migration. Folders are

@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import type { BackgroundRequest, BackgroundResponse, LiveTab } from '../src/browser/messages';
 import { createId } from '../src/domain/defaults';
 import { insertCollectionAtTop } from '../src/domain/collectionOrder';
+import { captureTabQuery, collectionSortAfterCapture } from '../src/domain/capture';
 import {
   createCollectionFromTabs,
   createRestorePlan,
@@ -61,9 +62,7 @@ const captureWindow = async (
   automatic = false,
 ): Promise<Collection> => {
   const workspaceId = await selectedWorkspaceId(requestedWorkspaceId);
-  const tabs = (await browser.tabs.query(
-    windowId === undefined ? { currentWindow: true } : { windowId },
-  )) as CapturedBrowserTab[];
+  const tabs = (await browser.tabs.query(captureTabQuery(windowId))) as CapturedBrowserTab[];
   let created: Collection | undefined;
   await updateLibrary((state) => {
     created = createCollectionFromTabs(
@@ -79,7 +78,18 @@ const captureWindow = async (
           .slice(0, 49)
       : state.collections;
     const collections = insertCollectionAtTop(previous, created);
-    return { ...state, collections };
+    return {
+      ...state,
+      collections,
+      settings: {
+        ...state.settings,
+        collectionSortByWorkspace: collectionSortAfterCapture(
+          state.settings.collectionSortByWorkspace,
+          workspaceId,
+          automatic,
+        ),
+      },
+    };
   });
   if (!created) throw new Error('The window could not be saved.');
   return created;
@@ -108,7 +118,7 @@ const captureActiveLink = async (requestedWorkspaceId?: string): Promise<SavedLi
   return link;
 };
 
-const restoreCollection = async (collectionId: string): Promise<string> => {
+const restoreCollection = async (collectionId: string, forceNewWindow = false): Promise<string> => {
   const state = await getLibrary();
   const collection = state.collections.find((item) => item.id === collectionId && !item.trashedAt);
   if (!collection) throw new Error('That collection no longer exists.');
@@ -123,7 +133,7 @@ const restoreCollection = async (collectionId: string): Promise<string> => {
       ? 'Every saved tab is already open. Turn off “Skip tabs that are already open” in Settings to allow another copy.'
       : 'No restorable tabs were found.';
   }
-  if (state.settings.restoreInNewWindow) {
+  if (forceNewWindow || state.settings.restoreInNewWindow) {
     await browser.windows.create({ url: plan.urls });
   } else {
     for (const url of plan.urls) await browser.tabs.create({ url, active: false });
@@ -316,7 +326,10 @@ export default defineBackground(() => {
             await captureActiveLink(request.workspaceId);
             return { ok: true };
           case 'restore-collection':
-            return { ok: true, message: await restoreCollection(request.collectionId) };
+            return {
+              ok: true,
+              message: await restoreCollection(request.collectionId, request.newWindow),
+            };
           case 'open-url':
             await openUrl(request.url);
             return { ok: true };
@@ -325,9 +338,14 @@ export default defineBackground(() => {
           case 'get-cloud-sync-config':
             return { ok: true, syncConfig: publicCloudSyncConfig(await getCloudSyncConfig()) };
           case 'save-cloud-sync-config': {
-            const config = await setCloudSyncConfig(request.config);
+            let config = await setCloudSyncConfig(request.config);
             await refreshCloudSyncAlarm();
-            return { ok: true, syncConfig: publicCloudSyncConfig(config) };
+            let message = 'Cloud settings saved.';
+            if (config.enabled) {
+              message = await syncCloud('auto');
+              config = await getCloudSyncConfig();
+            }
+            return { ok: true, syncConfig: publicCloudSyncConfig(config), message };
           }
           case 'sync-cloud':
             return { ok: true, message: await syncCloud(request.direction) };

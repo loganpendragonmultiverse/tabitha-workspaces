@@ -26,6 +26,10 @@ function Popup() {
       .filter((item) => !item.trashedAt && !item.automatic)
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .slice(0, 3) ?? [];
+  const workspaces =
+    library?.workspaces
+      .filter((item) => !item.trashedAt)
+      .sort((left, right) => left.order - right.order) ?? [];
 
   const run = async (request: BackgroundRequest, success: string): Promise<void> => {
     const response = await send(request);
@@ -34,6 +38,15 @@ function Popup() {
   };
   const restore = (item: Collection) =>
     run({ type: 'restore-collection', collectionId: item.id }, 'Restored.');
+
+  const selectDestination = async (workspaceId: string): Promise<void> => {
+    const next = await updateLibrary((state) => ({
+      ...state,
+      settings: { ...state.settings, selectedWorkspaceId: workspaceId },
+    }));
+    setLibrary(next);
+    setMessage('Save destination updated.');
+  };
 
   const saveRename = async (item: Collection): Promise<void> => {
     const name = renameValue.trim();
@@ -59,6 +72,17 @@ function Popup() {
         </div>
         <button onClick={() => void send({ type: 'open-dashboard', route: 'settings' })}>⚙</button>
       </header>
+      <label class="save-destination">
+        <span>Save window and page into</span>
+        <select
+          value={workspace?.id ?? ''}
+          onChange={(event) => void selectDestination(event.currentTarget.value)}
+        >
+          {workspaces.map((item) => (
+            <option value={item.id}>{item.name}</option>
+          ))}
+        </select>
+      </label>
       <section class="quick">
         <button
           onClick={() =>

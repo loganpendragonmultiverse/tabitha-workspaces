@@ -2,6 +2,26 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.11.0 - 2026-08-29
+
+- Sorted the recycle bin by deletion time with the most recently deleted item first and displayed
+  saved dates in UK day-first format.
+- Added a small direct remove control to every saved-tab tile and made List-layout tab title and URL
+  edits persist on blur or Enter.
+- Put newly created collections at the top of the active Custom view and automatically returned that
+  workspace to Custom ordering so the new collection is immediately visible.
+- Added edge-triggered page auto-scrolling during collection drag and drop without changing existing
+  collection, workspace, or saved-tab drop targets.
+- Made Save and enable perform one atomic WebDAV configuration and initial synchronization, including
+  creating a missing Koofr/WebDAV file and clearing stale sync ancestry when credentials change.
+- Kept Home out of the Starred view unless it is explicitly starred.
+- Clarified the current dashboard save destination and added an explicit popup destination selector
+  while retaining the separate Folder and Workspace creation controls.
+- Added a New window action to collection and saved-tab search results so the containing collection
+  can be restored into a separate browser window.
+- Preserved recoverable collection/workspace merging and explicit capture of other open windows, with
+  regression coverage for both behaviors.
+
 ## 1.10.0 - 2026-08-23
 
 - Separated the folder and workspace creation actions, and promoted Starred to a clear sidebar view.
