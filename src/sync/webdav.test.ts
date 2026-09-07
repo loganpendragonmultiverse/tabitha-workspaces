@@ -3,7 +3,7 @@ import { createDefaultState } from '../domain/defaults';
 import { serializeLibrary } from '../domain/importExport';
 import type { LibraryState } from '../domain/types';
 import type { CloudSyncConfig } from '../storage/cloudSyncStore';
-import { libraryFingerprint, synchronizeWebDav } from './webdav';
+import { assertRestoreSnapshotUnchanged, libraryFingerprint, synchronizeWebDav } from './webdav';
 
 const config: CloudSyncConfig = {
   enabled: true,
@@ -166,4 +166,34 @@ describe('WebDAV synchronization', () => {
       'No Tabitha backup',
     );
   });
+});
+
+it('preserves local state and sync baseline when a PUT is interrupted', async () => {
+  const base = createDefaultState(),
+    local = { ...base, revision: 1 };
+  const settings = { ...config, lastSyncedFingerprint: await libraryFingerprint(base) };
+  const before = structuredClone({ local, settings });
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(responseFor(base))
+      .mockRejectedValueOnce(new Error('network interrupted')),
+  );
+  await expect(synchronizeWebDav(settings, local, 'auto')).rejects.toThrow('interrupted');
+  expect({ local, settings }).toEqual(before);
+});
+it('rejects a stale local download snapshot', async () => {
+  const initial = createDefaultState();
+  await expect(assertRestoreSnapshotUnchanged(initial, initial)).resolves.toBeUndefined();
+  await expect(
+    assertRestoreSnapshotUnchanged(initial, { ...initial, revision: initial.revision + 1 }),
+  ).rejects.toThrow('local library changed');
+});
+it('rejects a truncated download without changing local data', async () => {
+  const local = createDefaultState(),
+    before = structuredClone(local);
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"format":', { status: 200 })));
+  await expect(synchronizeWebDav(config, local, 'download')).rejects.toThrow('valid JSON');
+  expect(local).toEqual(before);
 });

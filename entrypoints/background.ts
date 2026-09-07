@@ -20,7 +20,11 @@ import {
   replaceStoredLibrary,
   updateLibrary,
 } from '../src/storage/libraryStore';
-import { synchronizeWebDav, type SyncDirection } from '../src/sync/webdav';
+import {
+  assertRestoreSnapshotUnchanged,
+  synchronizeWebDav,
+  type SyncDirection,
+} from '../src/sync/webdav';
 
 const DASHBOARD_PATH = '/dashboard.html';
 const SNAPSHOT_ALARM = 'tabitha-recovery-snapshot';
@@ -194,13 +198,17 @@ const refreshCloudSyncAlarm = async (): Promise<void> => {
   }
 };
 
-const syncCloud = async (direction: SyncDirection): Promise<string> => {
+const performCloudSync = async (direction: SyncDirection): Promise<string> => {
   const config = await getCloudSyncConfig();
   if (direction === 'auto' && !config.enabled) return 'Automatic cloud sync is disabled.';
   if (!config.url) throw new Error('Add a WebDAV backup URL in Settings first.');
   try {
-    const result = await synchronizeWebDav(config, await getStoredLibrary(), direction);
-    if (result.action === 'downloaded') await replaceStoredLibrary(result.library);
+    const started = await getStoredLibrary();
+    const result = await synchronizeWebDav(config, started, direction);
+    if (result.action === 'downloaded') {
+      await assertRestoreSnapshotUnchanged(started, await getStoredLibrary());
+      await replaceStoredLibrary(result.library);
+    }
     await setCloudSyncConfig({
       ...config,
       lastSyncedAt: Date.now(),
@@ -215,6 +223,18 @@ const syncCloud = async (direction: SyncDirection): Promise<string> => {
     const message = error instanceof Error ? error.message : 'Cloud sync failed.';
     await setCloudSyncConfig({ ...config, lastError: message });
     throw error;
+  }
+};
+
+let syncInProgress = false;
+const syncCloud = async (direction: SyncDirection): Promise<string> => {
+  if (syncInProgress)
+    throw new Error('A sync is already in progress. Wait for it to finish before retrying.');
+  syncInProgress = true;
+  try {
+    return await performCloudSync(direction);
+  } finally {
+    syncInProgress = false;
   }
 };
 
