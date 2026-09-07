@@ -49,7 +49,7 @@
   "overrides": {
     "adm-zip": "0.6.0",
     "esbuild": "0.28.1",
-    "fast-uri": "3.1.5",
+    "fast-uri": "3.1.6",
     "shell-quote": "1.10.0",
     "tmp": "0.2.7",
     "undici": "7.29.0",
