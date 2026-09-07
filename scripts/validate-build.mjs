@@ -21,7 +21,16 @@ for (const target of targets) {
     throw new Error(`${target.browser}: expected only the optional HTTPS WebDAV permission`);
   }
   for (const permission of manifest.permissions ?? []) {
-    if (!['storage', 'tabs', 'contextMenus', 'unlimitedStorage', 'alarms'].includes(permission)) {
+    if (
+      ![
+        'storage',
+        'tabs',
+        'contextMenus',
+        'unlimitedStorage',
+        'alarms',
+        ...(target.browser === 'chrome' ? ['favicon'] : []),
+      ].includes(permission)
+    ) {
       throw new Error(`${target.browser}: unexpected permission ${permission}`);
     }
   }

@@ -197,3 +197,49 @@ it('rejects a truncated download without changing local data', async () => {
   await expect(synchronizeWebDav(config, local, 'download')).rejects.toThrow('valid JSON');
   expect(local).toEqual(before);
 });
+
+describe('stable fingerprints and previous-version migration', () => {
+  it('ignores JSON key order but preserves array order and real changes', async () => {
+    const base = createDefaultState();
+    const reordered = Object.fromEntries(Object.entries(base).reverse()) as unknown as LibraryState;
+    expect(await libraryFingerprint(base)).toBe(await libraryFingerprint(reordered));
+    expect(await libraryFingerprint({ ...base, revision: base.revision + 1 })).not.toBe(
+      await libraryFingerprint(base),
+    );
+  });
+  it('uses an unchanged strong server validator to migrate a previous fingerprint safely', async () => {
+    const base = createDefaultState();
+    const local = { ...base, revision: 2, updatedAt: 900 };
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(responseFor(base, '"known"'))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', mock);
+    expect(
+      (
+        await synchronizeWebDav(
+          { ...config, lastSyncedFingerprint: 'previous-format', lastRemoteEtag: '"known"' },
+          local,
+          'auto',
+        )
+      ).action,
+    ).toBe('uploaded');
+    expect(new Headers((mock.mock.calls[1]![1] as RequestInit).headers).get('If-Match')).toBe(
+      '"known"',
+    );
+  });
+  it('still refuses both-side changes when the server validator changed', async () => {
+    const local = { ...createDefaultState(), revision: 2 };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(responseFor(createDefaultState(), '"changed"')),
+    );
+    await expect(
+      synchronizeWebDav(
+        { ...config, lastSyncedFingerprint: 'old', lastRemoteEtag: '"known"' },
+        local,
+        'auto',
+      ),
+    ).rejects.toThrow('Sync conflict');
+  });
+});

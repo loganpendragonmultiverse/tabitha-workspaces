@@ -38,13 +38,26 @@ const request = (config: CloudSyncConfig, init: RequestInit): Promise<Response> 
   return fetch(url, { ...init, headers, cache: 'no-store' });
 };
 
-export const libraryFingerprint = async (library: LibraryState): Promise<string> => {
+const canonical = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([key, item]) => [key, canonical(item)]),
+    );
+  return value;
+};
+const fingerprint = async (library: LibraryState, stable: boolean): Promise<string> => {
   const digest = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(JSON.stringify(library)),
+    new TextEncoder().encode(JSON.stringify(stable ? canonical(library) : library)),
   );
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 };
+
+export const libraryFingerprint = (library: LibraryState): Promise<string> =>
+  fingerprint(library, true);
 
 const conflict = (): Error =>
   new Error(
@@ -142,8 +155,14 @@ export const synchronizeWebDav = async (
     throw conflict();
   }
 
-  const localChanged = localFingerprint !== base;
-  const remoteChanged = remote.fingerprint !== base;
+  // Accept the previous fingerprint format during migration. An unchanged strong
+  // remote ETag also proves the server copy has not changed since the common version.
+  const localChanged = localFingerprint !== base && (await fingerprint(local, false)) !== base;
+  const remoteUnchangedValidator = Boolean(remote.etag && remote.etag === config.lastRemoteEtag);
+  const remoteChanged =
+    !remoteUnchangedValidator &&
+    remote.fingerprint !== base &&
+    (await fingerprint(remote.library, false)) !== base;
   if (localChanged && remoteChanged) throw conflict();
   if (remoteChanged) {
     if (direction === 'upload') throw conflict();

@@ -10,7 +10,14 @@ export default defineConfig({
     short_name: 'Tabitha',
     description:
       'Organize tabs, collections, links, and notes into private local-first workspaces.',
-    permissions: ['storage', 'tabs', 'contextMenus', 'unlimitedStorage', 'alarms'],
+    permissions: [
+      'storage',
+      'tabs',
+      'contextMenus',
+      'unlimitedStorage',
+      'alarms',
+      ...(browser === 'chrome' ? ['favicon'] : []),
+    ],
     optional_host_permissions: ['https://*/*'],
     action: {
       default_title: 'Open Tabitha Workspaces',

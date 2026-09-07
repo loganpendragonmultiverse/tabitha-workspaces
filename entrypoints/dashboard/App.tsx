@@ -1,3 +1,6 @@
+import { LiveCapturePanel } from './LiveCapturePanel';
+import { TabFavicon } from './TabFavicon';
+import { appendLiveTabs } from '../../src/domain/liveCapture';
 import { syncDiagnostics } from '../../src/sync/diagnostics';
 import { DuplicateReview } from './DuplicateReview';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -78,7 +81,8 @@ interface EditorTarget {
 type PasswordAction = { folder: Folder; mode: 'protect' | 'unlock' | 'remove' };
 type DragPayload =
   | { kind: 'workspace' | 'collection'; id: string }
-  | { kind: 'tab'; id: string; collectionId: string };
+  | { kind: 'tab'; id: string; collectionId: string }
+  | { kind: 'live'; ids: number[]; skip: boolean };
 
 const PRIMARY_NAV: { id: View; label: string; icon: string }[] = [
   { id: 'links', label: 'Saved links', icon: '↗' },
@@ -126,6 +130,7 @@ export function App() {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState('');
   const [view, setView] = useState<View>(() => resolveDashboardView(location.hash));
+  const [showLivePanel, setShowLivePanel] = useState(false);
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
   const [editor, setEditor] = useState<EditorTarget | null>(null);
@@ -160,10 +165,11 @@ export function App() {
   }, [view]);
 
   useEffect(() => {
-    if (view !== 'windows') return;
+    if (view !== 'windows' && !showLivePanel) return;
+    void refreshLiveTabs();
     const interval = window.setInterval(() => void refreshLiveTabs(), 3000);
     return () => window.clearInterval(interval);
-  }, [view]);
+  }, [view, showLivePanel]);
 
   useEffect(() => {
     if (!toast) return;
@@ -324,6 +330,15 @@ export function App() {
   };
 
   const moveTabToCollection = async (targetCollectionId: string): Promise<void> => {
+    if (dragged?.kind === 'live') {
+      try {
+        await saveLiveSelection(dragged.ids, targetCollectionId, dragged.skip);
+      } catch (error) {
+        setToast(error instanceof Error ? error.message : 'Capture failed.');
+      }
+      setDragged(null);
+      return;
+    }
     if (!library || dragged?.kind !== 'tab') return;
     const nextCollections = moveSavedTab(
       library.collections,
@@ -335,6 +350,40 @@ export function App() {
     await persist({ ...library, collections: nextCollections });
     setDragged(null);
     setToast('Tab moved to the selected collection.');
+  };
+
+  const saveLiveSelection = async (
+    ids: number[],
+    targetId: string,
+    skip: boolean,
+  ): Promise<void> => {
+    const response = await send({ type: 'get-live-tabs' });
+    if (!response.ok) throw new Error(response.error);
+    const current = await getLibrary();
+    const tabs = (response.tabs ?? []).filter(
+      (tab) => tab.id !== undefined && ids.includes(tab.id),
+    );
+    const target = current.collections.find(
+      (c) =>
+        c.id === targetId &&
+        !c.trashedAt &&
+        current.workspaces.some(
+          (w) =>
+            w.id === c.workspaceId &&
+            !w.trashedAt &&
+            current.folders.some((f) => f.id === w.folderId && !f.trashedAt && !f.locked),
+        ),
+    );
+    if (!target) throw new Error('That collection is no longer available.');
+    const next = appendLiveTabs(target, tabs, skip);
+    if (next !== target)
+      await persist({
+        ...current,
+        collections: current.collections.map((c) => (c.id === targetId ? next : c)),
+      });
+    setToast(
+      `Saved ${next.tabs.length - target.tabs.length} tabs to ${target.name}; open tabs were kept.`,
+    );
   };
 
   const saveLiveTabToCollection = async (
@@ -528,7 +577,7 @@ export function App() {
 
   return (
     <div
-      class={`app density-${library.settings.density}`}
+      class={`app density-${library.settings.density}${showLivePanel ? ' with-live-panel' : ''}`}
       data-theme={library.settings.theme}
       style={{ '--accent': library.settings.accent }}
     >
@@ -551,9 +600,12 @@ export function App() {
             <small>Saved collections</small>
           </button>
           <button
-            class={view === 'windows' ? 'active' : ''}
-            aria-pressed={view === 'windows'}
-            onClick={() => setView('windows')}
+            class={showLivePanel ? 'active' : ''}
+            aria-pressed={showLivePanel}
+            onClick={() => {
+              setShowLivePanel(!showLivePanel);
+              if (view === 'windows') setView('overview');
+            }}
           >
             <span aria-hidden="true">◎</span>
             <strong>Open windows</strong>
@@ -979,6 +1031,18 @@ export function App() {
           )}
         </div>
       </main>
+      {showLivePanel && (
+        <LiveCapturePanel
+          tabs={liveTabs}
+          collections={active(library.collections).filter(
+            (c) => c.workspaceId === selectedWorkspaceId,
+          )}
+          onClose={() => setShowLivePanel(false)}
+          onRefresh={refreshLiveTabs}
+          onDrag={(ids, skip) => setDragged({ kind: 'live', ids, skip })}
+          onSave={saveLiveSelection}
+        />
+      )}
 
       <input
         ref={importInput}
@@ -1686,7 +1750,7 @@ function CollectionGroup({
               >
                 <a class="saved-tab-link" href={tab.url} target="_blank" rel="noreferrer">
                   <span class="tab-favicon">
-                    {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
+                    <TabFavicon url={tab.url} icon={tab.faviconUrl} title={tab.title} />
                   </span>
                   <span>
                     <strong>{tab.title}</strong>
@@ -1880,7 +1944,7 @@ function SessionListEditor({
             }}
           >
             <span class="tab-favicon">
-              {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : tab.title.slice(0, 1)}
+              <TabFavicon url={tab.url} icon={tab.faviconUrl} title={tab.title} />
             </span>
             <input
               aria-label="Tab title"
