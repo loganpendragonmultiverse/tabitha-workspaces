@@ -132,3 +132,11 @@ All notable changes are documented here. This project follows Semantic Versionin
 - Added versioned import/export, internal note links and backlinks, drag-and-drop ordering, and
   appearance preferences.
 - Added separate Manifest V3 Chromium and Firefox builds with no external data collection.
+
+## Version 1.12.0: reviewed improvements
+
+Add reviewed duplicate-URL merges, private diagnostic summaries and interrupted-sync safeguards.
+
+Settings now reviews exact or normalized URLs across selected unprotected collections, previews duplicate groups and creates a merged copy while retaining originals. Query strings remain significant; fragment removal is explicit. Changed source collections require a fresh preview. Protected and trashed folders are excluded. Diagnostic exports contain status categories and elapsed time, without server URLs, usernames, credentials, raw errors or browsing content. Concurrent sync requests are rejected, and a downloaded restore is refused if local data changed during transfer. Protected-library imports reject plaintext content and ambiguous legacy protection. Tests cover interrupted upload, truncated download, stale restore, duplicate policies and diagnostic redaction. Component desktop and narrow-width QA passed; the full dashboard retains its existing desktop minimum width. Native extension installation and a real WebDAV server were not exercised in this release.
+
+Validation: `npm run validate` and `npm audit --omit=dev`.

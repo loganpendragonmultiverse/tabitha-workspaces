@@ -165,3 +165,13 @@ export const synchronizeWebDav = async (
   }
   throw conflict();
 };
+
+export const assertRestoreSnapshotUnchanged = async (
+  started: LibraryState,
+  current: LibraryState,
+): Promise<void> => {
+  if ((await libraryFingerprint(started)) !== (await libraryFingerprint(current)))
+    throw new Error(
+      'Sync conflict: local library changed during the request. Retry after preserving current edits.',
+    );
+};

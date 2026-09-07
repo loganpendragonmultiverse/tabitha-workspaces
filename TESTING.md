@@ -34,3 +34,11 @@ conflict, explicit Home starring, the popup and dashboard save-destination label
 action from collection and tab search results. Keep workspace/collection merge and explicit
 other-window capture in the regression pass.
 Store review and signing occur separately from the GitHub release.
+
+## Version 1.12.0: reviewed improvements
+
+Add reviewed duplicate-URL merges, private diagnostic summaries and interrupted-sync safeguards.
+
+Settings now reviews exact or normalized URLs across selected unprotected collections, previews duplicate groups and creates a merged copy while retaining originals. Query strings remain significant; fragment removal is explicit. Changed source collections require a fresh preview. Protected and trashed folders are excluded. Diagnostic exports contain status categories and elapsed time, without server URLs, usernames, credentials, raw errors or browsing content. Concurrent sync requests are rejected, and a downloaded restore is refused if local data changed during transfer. Protected-library imports reject plaintext content and ambiguous legacy protection. Tests cover interrupted upload, truncated download, stale restore, duplicate policies and diagnostic redaction. Component desktop and narrow-width QA passed; the full dashboard retains its existing desktop minimum width. Native extension installation and a real WebDAV server were not exercised in this release.
+
+Validation: `npm run validate` and `npm audit --omit=dev`.

@@ -62,6 +62,19 @@ export const parseLibraryExport = (input: string): LibraryState => {
   ) {
     throw new Error('The selected file is not a supported Tabitha Workspaces backup.');
   }
+  const protectedIds = new Set(
+    (envelope.library.folders ?? [])
+      .filter((folder) => folder.protection)
+      .map((folder) => folder.id),
+  );
+  if (protectedIds.size && Number(envelope.library.schemaVersion) === 1)
+    throw new Error(
+      'Legacy protected libraries require an explicit folder migration; refusing ambiguous import.',
+    );
+  if ((envelope.library.workspaces ?? []).some((workspace) => protectedIds.has(workspace.folderId)))
+    throw new Error(
+      'Protected library imports cannot include plaintext protected-folder contents.',
+    );
   return normalizeLibrary(envelope.library);
 };
 

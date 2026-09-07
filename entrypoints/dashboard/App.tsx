@@ -1,3 +1,5 @@
+import { syncDiagnostics } from '../../src/sync/diagnostics';
+import { DuplicateReview } from './DuplicateReview';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { browser } from 'wxt/browser';
 import type {
@@ -945,32 +947,35 @@ export function App() {
             />
           )}
           {view === 'settings' && (
-            <SettingsView
-              settings={library.settings}
-              onChange={(settings) => void persist({ ...library, settings })}
-              onExport={() =>
-                void getStoredLibrary().then((stored) =>
-                  download(
-                    `tabitha-workspaces-${new Date().toISOString().slice(0, 10)}.json`,
-                    serializeLibrary(stored),
-                  ),
-                )
-              }
-              onExportFolders={() =>
-                void getStoredLibrary().then((stored) => {
-                  const folders = active(stored.folders);
-                  const date = new Date().toISOString().slice(0, 10);
-                  folders.forEach((folder) =>
+            <>
+              <DuplicateReview library={library} onApply={persist} />
+              <SettingsView
+                settings={library.settings}
+                onChange={(settings) => void persist({ ...library, settings })}
+                onExport={() =>
+                  void getStoredLibrary().then((stored) =>
                     download(
-                      `tabitha-${fileSafeName(folder.name)}-${folder.id.slice(0, 8)}-${date}.json`,
-                      serializeFolder(stored, folder.id),
+                      `tabitha-workspaces-${new Date().toISOString().slice(0, 10)}.json`,
+                      serializeLibrary(stored),
                     ),
-                  );
-                  setToast(`Exported ${folders.length} separate folder backups.`);
-                })
-              }
-              onImport={() => importInput.current?.click()}
-            />
+                  )
+                }
+                onExportFolders={() =>
+                  void getStoredLibrary().then((stored) => {
+                    const folders = active(stored.folders);
+                    const date = new Date().toISOString().slice(0, 10);
+                    folders.forEach((folder) =>
+                      download(
+                        `tabitha-${fileSafeName(folder.name)}-${folder.id.slice(0, 8)}-${date}.json`,
+                        serializeFolder(stored, folder.id),
+                      ),
+                    );
+                    setToast(`Exported ${folders.length} separate folder backups.`);
+                  })
+                }
+                onImport={() => importInput.current?.click()}
+              />
+            </>
           )}
         </div>
       </main>
@@ -2296,6 +2301,32 @@ function SettingsView({
   return (
     <>
       <PageHeading eyebrow="Preferences and privacy" title="Settings" />
+      {syncConfig && (
+        <section class="settings-card">
+          <h2>Sync diagnostics</h2>
+          <p>
+            {syncDiagnostics(syncConfig).status} — {syncDiagnostics(syncConfig).guidance}
+          </p>
+          <p>
+            Last successful sync:{' '}
+            {syncDiagnostics(syncConfig).lastSuccessAgeHours === null
+              ? 'not recorded'
+              : syncDiagnostics(syncConfig).lastSuccessAgeHours + ' hours ago'}
+            . Stale means more than seven days.
+          </p>
+          <button
+            class="button ghost"
+            onClick={() =>
+              download(
+                'tabitha-sync-diagnostics.json',
+                JSON.stringify(syncDiagnostics(syncConfig), null, 2),
+              )
+            }
+          >
+            Download diagnostic summary
+          </button>
+        </section>
+      )}
       <div class="settings-grid">
         <section class="settings-card">
           <h2>Appearance</h2>

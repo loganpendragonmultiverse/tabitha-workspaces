@@ -346,7 +346,7 @@ export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
   const folders = isLegacy
     ? [migratedFolder]
     : Array.isArray(candidate.folders)
-      ? candidate.folders
+      ? [...candidate.folders]
       : [];
   const fallbackFolder = folders.find((item) => !item.trashedAt) ?? migratedFolder;
   if (folders.length === 0) folders.push(fallbackFolder);
