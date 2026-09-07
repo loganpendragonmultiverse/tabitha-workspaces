@@ -28,3 +28,7 @@ therefore a separate storage area; the in-product backup warning explains this b
 
 Questions about this policy can be opened as a public support issue when they contain no sensitive
 information. Security-sensitive reports should follow [SECURITY.md](SECURITY.md).
+
+## Favicon recovery in 1.13
+
+Chromium requests the favicon permission and uses the browser favicon endpoint for missing saved icons. Firefox checks matching currently open tabs. No external favicon lookup service is added; unavailable icons retain a letter placeholder. See https://developer.chrome.com/docs/extensions/how-to/ui/favicons for the Chromium API.

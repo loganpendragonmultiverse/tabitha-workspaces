@@ -1880,3 +1880,125 @@ main {
 .modal-trash {
   margin-right: auto;
 }
+
+/* Keep the remove glyph quiet while retaining its click target. */
+.saved-tab-remove {
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+}
+.saved-tab-remove:hover {
+  color: #c73545;
+  background: color-mix(in srgb, #c73545 8%, var(--surface));
+}
+.app.with-live-panel {
+  grid-template-columns: 244px minmax(0, 1fr) 320px;
+}
+.live-capture-panel {
+  padding: 20px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.live-capture-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.live-capture-panel h2 {
+  font-size: 20px;
+}
+.live-capture-panel p,
+.live-capture-panel label {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.live-capture-panel input:not([type='checkbox']),
+.live-capture-panel select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  margin: 8px 0;
+}
+.panel-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.live-capture-panel button {
+  padding: 7px;
+  border-radius: 5px;
+}
+.capture-tab {
+  display: flex;
+  gap: 8px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+}
+.capture-tab div {
+  min-width: 0;
+}
+.capture-tab strong,
+.capture-tab small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.capture-tab strong {
+  font-size: 12px;
+}
+.capture-tab small {
+  font-size: 10px;
+  opacity: 0.7;
+}
+@media (max-width: 1100px) {
+  .app.with-live-panel {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+  .live-capture-panel {
+    grid-column: 2;
+    position: static;
+    height: auto;
+    max-height: 65vh;
+  }
+}
+
+.with-live-panel .collections-heading {
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.with-live-panel .heading-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.live-capture-panel label {
+  display: block;
+  margin: 12px 0;
+}
+.live-capture-panel button {
+  background: var(--surface-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.live-capture-panel button:hover {
+  border-color: var(--accent);
+}
+.live-capture-panel button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.live-capture-panel input:not([type='checkbox']),
+.live-capture-panel select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
