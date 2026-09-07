@@ -331,7 +331,11 @@ export function App() {
 
   const moveTabToCollection = async (targetCollectionId: string): Promise<void> => {
     if (dragged?.kind === 'live') {
-      await saveLiveSelection(dragged.ids, targetCollectionId, dragged.skip);
+      try {
+        await saveLiveSelection(dragged.ids, targetCollectionId, dragged.skip);
+      } catch (error) {
+        setToast(error instanceof Error ? error.message : 'Capture failed.');
+      }
       setDragged(null);
       return;
     }
@@ -353,13 +357,23 @@ export function App() {
     targetId: string,
     skip: boolean,
   ): Promise<void> => {
-    const current = await getLibrary();
     const response = await send({ type: 'get-live-tabs' });
     if (!response.ok) throw new Error(response.error);
+    const current = await getLibrary();
     const tabs = (response.tabs ?? []).filter(
       (tab) => tab.id !== undefined && ids.includes(tab.id),
     );
-    const target = current.collections.find((c) => c.id === targetId && !c.trashedAt);
+    const target = current.collections.find(
+      (c) =>
+        c.id === targetId &&
+        !c.trashedAt &&
+        current.workspaces.some(
+          (w) =>
+            w.id === c.workspaceId &&
+            !w.trashedAt &&
+            current.folders.some((f) => f.id === w.folderId && !f.trashedAt && !f.locked),
+        ),
+    );
     if (!target) throw new Error('That collection is no longer available.');
     const next = appendLiveTabs(target, tabs, skip);
     if (next !== target)
