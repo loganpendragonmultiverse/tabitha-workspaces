@@ -1,4 +1,5 @@
 import { createId, defaultSettings } from './defaults';
+import { formatSystemDateTime } from './dateFormat';
 import { isCollectionSortMode } from './collectionOrder';
 import type {
   CapturedBrowserTab,
@@ -54,7 +55,7 @@ export const createCollectionFromTabs = (
   const now = Date.now();
   return {
     id: createId(),
-    name: name.trim() || `Collection ${new Date(now).toLocaleString()}`,
+    name: name.trim() || 'Collection ' + formatSystemDateTime(now),
     workspaceId,
     description: '',
     tags: automatic ? ['recovery'] : [],

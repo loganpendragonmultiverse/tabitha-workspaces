@@ -116,6 +116,7 @@ export interface LibraryExport {
   format: 'tabitha-workspaces';
   exportedAt: string;
   version: 3;
+  settings: Settings;
   library: LibraryState;
 }
 

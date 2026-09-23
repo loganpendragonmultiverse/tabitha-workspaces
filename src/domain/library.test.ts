@@ -302,9 +302,12 @@ describe('collection and workspace organization', () => {
 });
 
 describe('versioned backups', () => {
-  it('round-trips the complete library', () => {
+  it('round-trips the complete library and exports user settings explicitly', () => {
     const state = fixture();
-    expect(parseLibraryExport(serializeLibrary(state))).toEqual(state);
+    const serialized = serializeLibrary(state);
+    const envelope = JSON.parse(serialized) as { settings: typeof state.settings };
+    expect(envelope.settings).toEqual(state.settings);
+    expect(parseLibraryExport(serialized)).toEqual(state);
   });
 
   it('exports and restores one unprotected folder independently', () => {

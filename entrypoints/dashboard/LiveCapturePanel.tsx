@@ -3,6 +3,7 @@ import type { LiveTab } from '../../src/browser/messages';
 import type { Collection } from '../../src/domain/types';
 import { filterLiveTabs } from '../../src/domain/liveCapture';
 import { groupLiveTabs } from '../../src/domain/liveWindows';
+import { TabFavicon } from './TabFavicon';
 
 export function LiveCapturePanel({
   tabs,
@@ -25,8 +26,10 @@ export function LiveCapturePanel({
   const [skip, setSkip] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [collapsed, setCollapsed] = useState<string[]>([]);
   const filtered = filterLiveTabs(tabs, query);
   const selectedIds = selected.filter((id) => tabs.some((tab) => tab.id === id));
+  const windows = groupLiveTabs(filtered);
   return (
     <aside class="live-capture-panel" aria-label="Open windows capture panel">
       <header>
@@ -44,7 +47,13 @@ export function LiveCapturePanel({
       />
       <div class="panel-actions">
         <button onClick={() => void onRefresh()}>Refresh</button>
-        <button onClick={() => setSelected(filtered.map((t) => t.id))}>Select visible</button>
+        <button
+          onClick={() =>
+            setSelected(filtered.flatMap((tab) => (tab.id === undefined ? [] : [tab.id])))
+          }
+        >
+          Select visible
+        </button>
         <button onClick={() => setSelected([])}>Clear selection</button>
       </div>
       <label>
@@ -83,40 +92,64 @@ export function LiveCapturePanel({
       </button>
       {error && <p role="alert">{error}</p>}
       {!filtered.length && <p>No matching restorable tabs.</p>}
-      {groupLiveTabs(filtered).map((window) => (
-        <section>
-          <h3>Window {window.windowId ?? 'unknown'}</h3>
-          {window.tabs.map((tab) => (
-            <div
-              class="capture-tab"
-              draggable
-              onDragStart={(event) => {
-                const ids = selectedIds.includes(tab.id) ? selectedIds : [tab.id];
-                event.dataTransfer?.setData('application/x-tabitha-tab', 'live');
-                if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
-                onDrag(ids, skip);
-              }}
+      {windows.map((window) => {
+        const key = String(window.windowId ?? 'unknown');
+        const isCollapsed = collapsed.includes(key);
+        return (
+          <section class="capture-window" key={key}>
+            <button
+              class="capture-window-heading"
+              aria-expanded={!isCollapsed}
+              onClick={() =>
+                setCollapsed(
+                  isCollapsed ? collapsed.filter((item) => item !== key) : [...collapsed, key],
+                )
+              }
             >
-              <input
-                type="checkbox"
-                aria-label={`Select open tab ${tab.title}`}
-                checked={selectedIds.includes(tab.id)}
-                onChange={(e) =>
-                  setSelected(
-                    e.currentTarget.checked
-                      ? [...selectedIds, tab.id]
-                      : selectedIds.filter((id) => id !== tab.id),
-                  )
-                }
-              />
-              <div>
-                <strong>{tab.title}</strong>
-                <small>{tab.url}</small>
+              <span aria-hidden="true">{isCollapsed ? '▸' : '▾'}</span>
+              <strong>Window {window.windowId ?? 'unknown'}</strong>
+              <small>{window.tabs.length} tabs</small>
+            </button>
+            {!isCollapsed && (
+              <div class="capture-window-tabs">
+                {window.tabs.map((tab) => {
+                  if (tab.id === undefined) return null;
+                  return (
+                    <div
+                      class="capture-tab"
+                      draggable
+                      title={tab.url}
+                      onDragStart={(event) => {
+                        const ids = selectedIds.includes(tab.id) ? selectedIds : [tab.id];
+                        event.dataTransfer?.setData('application/x-tabitha-tab', 'live');
+                        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
+                        onDrag(ids, skip);
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={'Select open tab ' + tab.title}
+                        checked={selectedIds.includes(tab.id)}
+                        onChange={(e) =>
+                          setSelected(
+                            e.currentTarget.checked
+                              ? [...selectedIds, tab.id]
+                              : selectedIds.filter((id) => id !== tab.id),
+                          )
+                        }
+                      />
+                      <span class="capture-tab-favicon" aria-hidden="true">
+                        <TabFavicon url={tab.url} icon={tab.favIconUrl} title={tab.title} />
+                      </span>
+                      <strong>{tab.title || 'Untitled tab'}</strong>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          ))}
-        </section>
-      ))}
+            )}
+          </section>
+        );
+      })}
     </aside>
   );
 }
