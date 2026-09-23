@@ -5,6 +5,7 @@ export const exportLibrary = (library: LibraryState): LibraryExport => ({
   format: 'tabitha-workspaces',
   exportedAt: new Date().toISOString(),
   version: 3,
+  settings: library.settings,
   library,
 });
 
@@ -75,7 +76,10 @@ export const parseLibraryExport = (input: string): LibraryState => {
     throw new Error(
       'Protected library imports cannot include plaintext protected-folder contents.',
     );
-  return normalizeLibrary(envelope.library);
+  return normalizeLibrary({
+    ...envelope.library,
+    settings: envelope.settings ?? envelope.library.settings,
+  });
 };
 
 export const parseFolderExport = (input: string): FolderExport => {

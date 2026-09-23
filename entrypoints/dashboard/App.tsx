@@ -12,7 +12,7 @@ import type {
   LiveTab,
 } from '../../src/browser/messages';
 import { createId } from '../../src/domain/defaults';
-import { formatUkDate } from '../../src/domain/dateFormat';
+import { formatSystemDate } from '../../src/domain/dateFormat';
 import { applyWorkspaceLayout } from '../../src/domain/collectionView';
 import {
   insertCollectionAtTop,
@@ -106,7 +106,7 @@ const timeLabel = (timestamp?: number): string => {
   if (delta < 60_000) return 'Just now';
   if (delta < 3_600_000) return `${Math.floor(delta / 60_000)}m ago`;
   if (delta < 86_400_000) return `${Math.floor(delta / 3_600_000)}h ago`;
-  return formatUkDate(timestamp);
+  return formatSystemDate(timestamp);
 };
 
 const download = (filename: string, contents: string): void => {
@@ -593,7 +593,10 @@ export function App() {
           <button
             class={view === 'windows' ? '' : 'active'}
             aria-pressed={view !== 'windows'}
-            onClick={() => setView('overview')}
+            onClick={() => {
+              setShowLivePanel(false);
+              setView('overview');
+            }}
           >
             <span aria-hidden="true">⌂</span>
             <strong>Workspaces</strong>

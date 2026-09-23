@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.11.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.11.0/tabitha-workspaces-1.11.0-chrome.zip)
-- [Download Tabitha Workspaces 1.11.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.11.0/tabitha-workspaces-1.11.0-firefox.zip)
+- [Download Tabitha Workspaces 1.14.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.14.0/tabitha-workspaces-1.14.0-chrome.zip)
+- [Download Tabitha Workspaces 1.14.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.14.0/tabitha-workspaces-1.14.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -130,8 +130,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.11.0-chrome.zip`
-- `.output/tabitha-workspaces-1.11.0-firefox.zip`
+- `.output/tabitha-workspaces-1.14.0-chrome.zip`
+- `.output/tabitha-workspaces-1.14.0-firefox.zip`
 
 ## Architecture
 
@@ -173,6 +173,16 @@ Tabitha Workspaces is licensed under the GNU General Public License version 3. S
 ## More open-source projects
 
 This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
+
+## Version 1.14.0: feedback refinements
+
+- Made the **Workspaces** switch close the Open windows capture panel instead of leaving the third column open.
+- Reworked Open windows into compact, individually collapsible browser-window groups with favicon-and-title rows; noisy referrer/query URLs are no longer rendered in the panel.
+- Made Duplicate URL review collapsible so it no longer dominates Settings.
+- Made complete-library JSON exports carry user settings explicitly at the backup envelope level while preserving backward-compatible imports.
+- Made generated collection names and saved-date display follow the browser/system locale rather than a hard-coded date convention.
+- Updated release links and build-output examples to the current release.
+- Included the green `sharp` and `js-yaml` dependency updates already validated by CI; failing dependency update PRs remain excluded.
 
 ## Version 1.12.0: reviewed improvements
 

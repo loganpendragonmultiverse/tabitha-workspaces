@@ -1934,28 +1934,94 @@ main {
   padding: 7px;
   border-radius: 5px;
 }
+.capture-window {
+  margin: 10px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.capture-window-heading {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  text-align: left;
+  background: var(--surface-2);
+}
+.capture-window-heading strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.capture-window-heading small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.capture-window-tabs {
+  display: grid;
+}
 .capture-tab {
-  display: flex;
-  gap: 8px;
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 18px 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 7px;
+  border-top: 1px solid var(--border);
   cursor: grab;
 }
-.capture-tab div {
-  min-width: 0;
+.capture-tab:first-child {
+  border-top: 0;
 }
-.capture-tab strong,
-.capture-tab small {
-  display: block;
-  overflow-wrap: anywhere;
+.capture-tab input {
+  margin: 0;
+}
+.capture-tab-favicon {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.capture-tab-favicon img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 .capture-tab strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.duplicate-review > summary {
+  cursor: pointer;
+  list-style: none;
+  display: grid;
+  gap: 3px;
+}
+.duplicate-review > summary::-webkit-details-marker {
+  display: none;
+}
+.duplicate-review > summary span {
+  color: var(--muted);
   font-size: 12px;
+  font-weight: 400;
 }
-.capture-tab small {
-  font-size: 10px;
-  opacity: 0.7;
+.duplicate-review-body {
+  margin-top: 14px;
 }
+
 @media (max-width: 1100px) {
   .app.with-live-panel {
     grid-template-columns: 200px minmax(0, 1fr);

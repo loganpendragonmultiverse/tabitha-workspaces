@@ -2,6 +2,34 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.14.0 - 2026-09-23
+
+- Made Workspaces close the live Open windows panel and changed the panel to compact favicon/title rows grouped under individually collapsible browser windows.
+- Stopped rendering long live-tab URLs in the capture column while retaining the original URL for capture, search, drag, and tooltip context.
+- Made Duplicate URL review collapsible in Settings.
+- Added explicit top-level user settings to complete-library JSON exports while retaining backward-compatible imports.
+- Made generated collection names and saved-date labels follow the browser/system locale.
+- Updated README release/download/build references from v1.11.0 to v1.14.0.
+- Included validated dependency updates for `sharp` 0.35.4 and `js-yaml` 4.3.2; dependency updates that fail project validation remain unmerged.
+
+## 1.13.0 - 2026-09-07
+
+Add a right-hand live-tab capture panel, searchable multi-tab capture, browser favicon recovery and safer WebDAV fingerprint migration.
+
+Open windows toggles a third column beside saved collections. Drag one tab or a selected set directly onto a collection; source tabs remain open. Search filters titles and URLs, Select visible batches matching tabs, and duplicate skipping is explicit. A keyboard capture destination offers an alternative to dragging. Capture rechecks current browser tabs and the destination before saving. Chromium uses its favicon API for imported URL-only entries; Firefox can recover matching icons from currently open tabs, with a letter fallback when no icon is available. Missing icons are not sent to a third-party favicon service. Close controls have a smaller neutral glyph. Sync fingerprints are independent of JSON object key order, accept the previous fingerprint format and recognize an unchanged strong remote ETag while retaining conditional upload and real conflict protection. Actual Koofr account testing was not available; no claim is made that every provider-specific conflict is resolved.
+
+Validation: complete project validation, 75 automated tests, Chromium/Firefox builds and packaging, manifest checks, Firefox lint and dependency audit. Controlled browser fixtures exercise the full dashboard; native installed-extension and live Koofr acceptance remain unverified. The full dashboard retains a desktop minimum width; the panel stacks below content on narrower desktop windows.
+
+The build now pins fast-uri 3.1.6 for URI parser security fixes. See SECURITY.md for the remaining development-only image-size advisories; no shipped dependency vulnerability was reported.
+
+## 1.12.0 - 2026-09-07
+
+Add reviewed duplicate-URL merges, private diagnostic summaries and interrupted-sync safeguards.
+
+Settings now reviews exact or normalized URLs across selected unprotected collections, previews duplicate groups and creates a merged copy while retaining originals. Query strings remain significant; fragment removal is explicit. Changed source collections require a fresh preview. Protected and trashed folders are excluded. Diagnostic exports contain status categories and elapsed time, without server URLs, usernames, credentials, raw errors or browsing content. Concurrent sync requests are rejected, and a downloaded restore is refused if local data changed during transfer. Protected-library imports reject plaintext content and ambiguous legacy protection. Tests cover interrupted upload, truncated download, stale restore, duplicate policies and diagnostic redaction. Component desktop and narrow-width QA passed; the full dashboard retains its existing desktop minimum width. Native extension installation and a real WebDAV server were not exercised in this release.
+
+Validation: `npm run validate` and `npm audit --omit=dev`.
+
 ## 1.11.0 - 2026-08-29
 
 - Sorted the recycle bin by deletion time with the most recently deleted item first and displayed
@@ -132,21 +160,3 @@ All notable changes are documented here. This project follows Semantic Versionin
 - Added versioned import/export, internal note links and backlinks, drag-and-drop ordering, and
   appearance preferences.
 - Added separate Manifest V3 Chromium and Firefox builds with no external data collection.
-
-## Version 1.12.0: reviewed improvements
-
-Add reviewed duplicate-URL merges, private diagnostic summaries and interrupted-sync safeguards.
-
-Settings now reviews exact or normalized URLs across selected unprotected collections, previews duplicate groups and creates a merged copy while retaining originals. Query strings remain significant; fragment removal is explicit. Changed source collections require a fresh preview. Protected and trashed folders are excluded. Diagnostic exports contain status categories and elapsed time, without server URLs, usernames, credentials, raw errors or browsing content. Concurrent sync requests are rejected, and a downloaded restore is refused if local data changed during transfer. Protected-library imports reject plaintext content and ambiguous legacy protection. Tests cover interrupted upload, truncated download, stale restore, duplicate policies and diagnostic redaction. Component desktop and narrow-width QA passed; the full dashboard retains its existing desktop minimum width. Native extension installation and a real WebDAV server were not exercised in this release.
-
-Validation: `npm run validate` and `npm audit --omit=dev`.
-
-## Version 1.13.0: reviewed improvements
-
-Add a right-hand live-tab capture panel, searchable multi-tab capture, browser favicon recovery and safer WebDAV fingerprint migration.
-
-Open windows toggles a third column beside saved collections. Drag one tab or a selected set directly onto a collection; source tabs remain open. Search filters titles and URLs, Select visible batches matching tabs, and duplicate skipping is explicit. A keyboard capture destination offers an alternative to dragging. Capture rechecks current browser tabs and the destination before saving. Chromium uses its favicon API for imported URL-only entries; Firefox can recover matching icons from currently open tabs, with a letter fallback when no icon is available. Missing icons are not sent to a third-party favicon service. Close controls have a smaller neutral glyph. Sync fingerprints are independent of JSON object key order, accept the previous fingerprint format and recognize an unchanged strong remote ETag while retaining conditional upload and real conflict protection. Actual Koofr account testing was not available; no claim is made that every provider-specific conflict is resolved.
-
-Validation: complete project validation, 75 automated tests, Chromium/Firefox builds and packaging, manifest checks, Firefox lint and dependency audit. Controlled browser fixtures exercise the full dashboard; native installed-extension and live Koofr acceptance remain unverified. The full dashboard retains a desktop minimum width; the panel stacks below content on narrower desktop windows.
-
-The build now pins fast-uri 3.1.6 for URI parser security fixes. See SECURITY.md for the remaining development-only image-size advisories; no shipped dependency vulnerability was reported.
