@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'preact/hooks';
 import {
   availableCollections,
+  savedDomains,
+  copyableUrls,
+  removeSelectedTabs,
+  undoTabRemoval,
+  type TabRemovalUndo,
   copyCollection,
   exportCollectionLinks,
   filterSavedTabs,
@@ -21,6 +26,8 @@ export function WorkspaceTools({
 }) {
   const [collectionId, setCollectionId] = useState('');
   const [query, setQuery] = useState('');
+  const [exactDomain, setExactDomain] = useState('');
+  const [undo, setUndo] = useState<TabRemovalUndo | null>(null);
   const [sort, setSort] = useState<TabSort>('saved');
   const [selected, setSelected] = useState<string[]>([]);
   const [destination, setDestination] = useState(workspaceId);
@@ -30,12 +37,14 @@ export function WorkspaceTools({
     setCollectionId('');
     setSelected([]);
     setQuery('');
+    setExactDomain('');
+    setUndo(null);
     setDestination(workspaceId);
     setMessage('');
   }, [workspaceId]);
   const collections = availableCollections(library, workspaceId);
   const collection = collections.find((c) => c.id === collectionId);
-  const rows = collection ? filterSavedTabs(collection.tabs, query, sort) : [];
+  const rows = collection ? filterSavedTabs(collection.tabs, query, sort, exactDomain) : [];
   const ids = selected.filter((id) => collection?.tabs.some((t) => t.id === id));
   const destinations = library.workspaces.filter(
     (w) =>
@@ -89,6 +98,8 @@ export function WorkspaceTools({
             setCollectionId(e.currentTarget.value);
             setSelected([]);
             setQuery('');
+            setExactDomain('');
+            setUndo(null);
             setMessage('');
           }}
         >
@@ -106,6 +117,15 @@ export function WorkspaceTools({
             <label>
               Find titles, URLs or domains
               <input type="search" value={query} onInput={(e) => setQuery(e.currentTarget.value)} />
+            </label>
+            <label>
+              Filter by domain
+              <select value={exactDomain} onChange={(e) => setExactDomain(e.currentTarget.value)}>
+                <option value="">All domains</option>
+                {savedDomains(collection.tabs).map((domain) => (
+                  <option value={domain}>{domain}</option>
+                ))}
+              </select>
             </label>
             <label>
               Display order
@@ -199,6 +219,51 @@ export function WorkspaceTools({
             >
               Duplicate collection
             </button>
+            <button
+              class="button ghost"
+              disabled={busy || !ids.length}
+              onClick={() =>
+                void run(async () => {
+                  if (
+                    !confirm(
+                      'Copy selected full URLs, including query strings, to the clipboard? Review them before sharing.',
+                    )
+                  )
+                    return;
+                  await navigator.clipboard.writeText(copyableUrls(collection, ids));
+                  setMessage('Selected URLs copied to the clipboard.');
+                })
+              }
+            >
+              Copy selected URLs
+            </button>
+            <button
+              class="button ghost"
+              disabled={busy || !ids.length}
+              onClick={() =>
+                void run(async () => {
+                  if (
+                    !confirm(
+                      'Remove ' +
+                        ids.length +
+                        ' selected saved tabs? Open browser tabs stay open. Undo is available in this panel until you leave it, unless the saved tabs change.',
+                    )
+                  )
+                    return;
+                  let receipt: TabRemovalUndo | null = null;
+                  await onApply((state) => {
+                    const result = removeSelectedTabs(state, collection.id, collection.tabs, ids);
+                    receipt = result.undo;
+                    return result.state;
+                  });
+                  setUndo(receipt);
+                  setSelected([]);
+                  setMessage('Selected saved tabs removed. Use Undo before leaving this panel.');
+                })
+              }
+            >
+              Remove selected saved tabs
+            </button>
             <button class="button ghost" onClick={() => exportLinks('markdown')}>
               Export {ids.length ? 'selected' : 'all'} as Markdown
             </button>
@@ -207,6 +272,21 @@ export function WorkspaceTools({
             </button>
           </div>
         </>
+      )}
+      {undo && collections.some((c) => c.id === undo.collectionId) && (
+        <button
+          class="button ghost"
+          disabled={busy}
+          onClick={() =>
+            void run(async () => {
+              await onApply((state) => undoTabRemoval(state, undo));
+              setUndo(null);
+              setMessage('Removed saved tabs restored.');
+            })
+          }
+        >
+          Undo saved-tab removal
+        </button>
       )}
       {message && <p role="status">{message}</p>}
     </details>

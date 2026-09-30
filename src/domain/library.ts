@@ -381,9 +381,13 @@ export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
     settings: {
       ...defaultSettings(),
       ...candidate.settings,
-      dateFormat: isDateFormat(candidate.settings?.dateFormat)
-        ? candidate.settings.dateFormat
-        : 'system',
+      dateFormat:
+        isDateFormat(candidate.settings?.dateFormat) &&
+        (candidate.settings.dateFormat !== 'system' ||
+          candidate.settings.dateFormatExplicit === true)
+          ? candidate.settings.dateFormat
+          : 'day-first',
+      dateFormatExplicit: candidate.settings?.dateFormatExplicit === true,
       collectionSortByWorkspace: Object.fromEntries(
         Object.entries(candidate.settings?.collectionSortByWorkspace ?? {}).filter(
           ([workspaceId, mode]) => workspaceId.length > 0 && isCollectionSortMode(mode),

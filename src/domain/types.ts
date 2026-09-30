@@ -85,6 +85,7 @@ export type SearchScope = 'all' | 'workspace' | 'collection' | 'url';
 
 export interface Settings {
   dateFormat: DateFormat;
+  dateFormatExplicit?: boolean;
   theme: Theme;
   density: Density;
   accent: string;

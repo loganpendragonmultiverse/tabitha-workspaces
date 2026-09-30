@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.15.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.15.0/tabitha-workspaces-1.15.0-chrome.zip)
-- [Download Tabitha Workspaces 1.15.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.15.0/tabitha-workspaces-1.15.0-firefox.zip)
+- [Download Tabitha Workspaces 1.15.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.16.0/tabitha-workspaces-1.16.0-chrome.zip)
+- [Download Tabitha Workspaces 1.15.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.16.0/tabitha-workspaces-1.16.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -135,8 +135,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.15.0-chrome.zip`
-- `.output/tabitha-workspaces-1.15.0-firefox.zip`
+- `.output/tabitha-workspaces-1.16.0-chrome.zip`
+- `.output/tabitha-workspaces-1.16.0-firefox.zip`
 
 ## Architecture
 
@@ -179,7 +179,7 @@ Tabitha Workspaces is licensed under the GNU General Public License version 3. S
 
 This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
 
-## Version 1.15.0: feedback refinements
+## Version 1.14.0: feedback refinements
 
 - Made the **Workspaces** switch close the Open windows capture panel instead of leaving the third column open.
 - Reworked Open windows into compact, individually collapsible browser-window groups with favicon-and-title rows; noisy referrer/query URLs are no longer rendered in the panel.
@@ -210,3 +210,9 @@ Validation: complete project validation, 75 automated tests, Chromium/Firefox bu
 Choose browser, day-first, month-first, or ISO date display. New generated collection names and saved-date labels follow the preference. Preview, select, apply, and undo recognized older generated names; custom names, automatic snapshots, trashed content, and locked folders are excluded. Collection tools filter saved titles and URLs, sort the display by title or domain, select matching tabs, restore a subset, duplicate a collection, or copy a selection into another unlocked workspace while preserving originals. Export selected or all HTTP(S) links as Markdown or bookmark HTML after reviewing the full-URL privacy notice.
 
 In **Settings → Date display**, select **Day / month / year** to address month-first browser locale settings. Use **Preview old date names** to review saved names before applying changes; **Undo name changes** only restores names that have not been edited since. In a saved workspace, expand **Collection tools**, choose a collection, and select matching tabs. Display sorting does not reorder stored tabs. Copies keep originals. Link exports contain full URLs, including query strings, and are not recovery backups.
+
+## Version 1.16.0: reviewed improvements
+
+New and upgraded libraries now default to **day / month / year**, even when the browser language is US English. The old unconfigured Browser locale setting migrates to day-first. Existing explicit day-first, month-first and ISO choices remain intact; choosing Browser locale again is supported and persists. Browser language is not a reliable indication of the computer's regional date settings. All manual capture entry points use the stored format. Existing collection names remain saved text: use Settings → Date display → Preview old date names, review the changes and apply them with Undo available. Custom names are retained.
+
+Collection tools now offers an exact **Filter by domain** selector alongside text search, **Copy selected URLs** to the clipboard, and **Remove selected saved tabs** with **Undo saved-tab removal**. Domain filtering changes only the visible rows. Clipboard copying includes full HTTP(S) URLs and query strings, after confirmation. Removal affects saved tabs only and keeps the collection and open browser tabs. Undo remains available in the current panel until you leave it or choose another collection; it refuses to overwrite subsequent saved-tab edits, additions, moves or removals. Locked, trashed and missing collections are refused. Keep a full-library JSON backup for durable recovery.

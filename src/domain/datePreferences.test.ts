@@ -23,8 +23,23 @@ describe('date preference and reviewed name repair', () => {
   it('normalizes old backups and invalid preferences without changing the schema', () => {
     const s = createDefaultState();
     s.settings.dateFormat = 'invalid' as never;
-    expect(normalizeLibrary(s).settings.dateFormat).toBe('system');
+    expect(normalizeLibrary(s).settings.dateFormat).toBe('day-first');
     expect(normalizeLibrary(s).schemaVersion).toBe(3);
+  });
+  it('migrates the old US-browser default but retains deliberate date choices', () => {
+    const s = createDefaultState();
+    expect(s.settings.dateFormat).toBe('day-first');
+    s.settings.dateFormat = 'system';
+    expect(normalizeLibrary(s).settings.dateFormat).toBe('day-first');
+    s.settings.dateFormatExplicit = true;
+    expect(normalizeLibrary(s).settings.dateFormat).toBe('system');
+    s.settings.dateFormatExplicit = false;
+    for (const format of ['day-first', 'month-first', 'iso'] as const) {
+      s.settings.dateFormat = format;
+      expect(normalizeLibrary(s).settings.dateFormat).toBe(format);
+    }
+    expect(formatPreferredDateTime(stamp, undefined, ['en-US'])).toContain('27/09/2026');
+    expect(normalizeLibrary(normalizeLibrary(s))).toEqual(normalizeLibrary(s));
   });
   it('honors the preference for newly generated names and retains custom names', () => {
     const s = createDefaultState();
