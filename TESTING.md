@@ -54,3 +54,7 @@ Validation: complete project validation, 75 automated tests, Chromium/Firefox bu
 ## Version 1.14.0: feedback refinements
 
 Workspaces now closes the live panel; Open windows uses compact favicon/title rows with per-window collapse; duplicate review is collapsible; full-library exports expose settings explicitly; and generated collection/date labels follow the browser/system locale. README release links are current. The release includes only dependency updates that passed the existing validation gates.
+
+## Version 1.15.0: saved-tab tools and explicit dates
+
+Run `npm run validate`. Regressions cover legacy settings normalization, explicit date formats, reviewed name repair and Undo, stale/locked sources, selection validation, non-mutating sorting, copy identity isolation, and escaped export content. Before release, exercise an installed Chromium and Firefox extension with an existing library: save/copy/restore/export, date repair/Undo, protected folders, JSON recovery, and WebDAV conflict behavior. Live Koofr acceptance requires a real account.

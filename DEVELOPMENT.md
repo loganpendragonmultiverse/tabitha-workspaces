@@ -123,3 +123,7 @@ Validation: complete project validation, 75 automated tests, Chromium/Firefox bu
 ## Version 1.14.0: feedback refinements
 
 Workspaces now closes the live panel; Open windows uses compact favicon/title rows with per-window collapse; duplicate review is collapsible; full-library exports expose settings explicitly; and generated collection/date labels follow the browser/system locale. README release links are current. The release includes only dependency updates that passed the existing validation gates.
+
+## Version 1.15.0: saved-tab tools and explicit dates
+
+Choose browser, day-first, month-first, or ISO date display. New generated collection names and saved-date labels follow the preference. Preview, select, apply, and undo recognized older generated names; custom names, automatic snapshots, trashed content, and locked folders are excluded. Collection tools filter saved titles and URLs, sort the display by title or domain, select matching tabs, restore a subset, duplicate a collection, or copy a selection into another unlocked workspace while preserving originals. Export selected or all HTTP(S) links as Markdown or bookmark HTML after reviewing the full-URL privacy notice.

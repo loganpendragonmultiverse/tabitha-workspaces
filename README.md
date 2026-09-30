@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.14.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.14.0/tabitha-workspaces-1.14.0-chrome.zip)
-- [Download Tabitha Workspaces 1.14.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.14.0/tabitha-workspaces-1.14.0-firefox.zip)
+- [Download Tabitha Workspaces 1.15.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.15.0/tabitha-workspaces-1.15.0-chrome.zip)
+- [Download Tabitha Workspaces 1.15.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.15.0/tabitha-workspaces-1.15.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -18,6 +18,11 @@ After downloading, follow the short browser-specific steps in
 
 ## What it does
 
+- Add explicit date-format preferences and reviewed repair with Undo for older generated collection names.
+- Add saved-tab search, display sorting, batch selection, and selected-tab restoration.
+- Add collection duplication and cross-workspace copies with fresh IDs and stale-source guards.
+- Add Markdown and bookmark HTML link exports that exclude notes, settings, and sync credentials.
+- Keep library schema 3, encrypted folders, WebDAV conflict handling, and existing full-library exports compatible.
 - Uses top-level folders as isolated containers for one or more workspaces.
 - Optionally password-protects any top-level folder with PBKDF2-derived AES-256-GCM encryption.
 - Captures the current browser window as a restorable collection at the top of its workspace's
@@ -31,7 +36,7 @@ After downloading, follow the short browser-specific steps in
 - Searches workspace names, folders, collections, saved tabs, URLs, notes, and tags, with direct
   Workspaces, Collections, and URLs filters.
 - Soft-deletes workspaces, folders, collections, links, and notes into a recycle bin.
-- Shows the newest recycle-bin item first and formats saved dates day-first for UK readers.
+- Shows the newest recycle-bin item first and formats saved dates using the explicit browser, day-first, month-first, or ISO preference.
 - Sorts each workspace's collections by Custom, Newest added, Oldest added, or A–Z order.
 - Reorders workspaces and collections with drag and drop; dragging a sorted collection view
   preserves the visible sequence as the new Custom order.
@@ -130,8 +135,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.14.0-chrome.zip`
-- `.output/tabitha-workspaces-1.14.0-firefox.zip`
+- `.output/tabitha-workspaces-1.15.0-chrome.zip`
+- `.output/tabitha-workspaces-1.15.0-firefox.zip`
 
 ## Architecture
 
@@ -174,7 +179,7 @@ Tabitha Workspaces is licensed under the GNU General Public License version 3. S
 
 This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
 
-## Version 1.14.0: feedback refinements
+## Version 1.15.0: feedback refinements
 
 - Made the **Workspaces** switch close the Open windows capture panel instead of leaving the third column open.
 - Reworked Open windows into compact, individually collapsible browser-window groups with favicon-and-title rows; noisy referrer/query URLs are no longer rendered in the panel.
@@ -199,3 +204,9 @@ Add a right-hand live-tab capture panel, searchable multi-tab capture, browser f
 Open windows toggles a third column beside saved collections. Drag one tab or a selected set directly onto a collection; source tabs remain open. Search filters titles and URLs, Select visible batches matching tabs, and duplicate skipping is explicit. A keyboard capture destination offers an alternative to dragging. Capture rechecks current browser tabs and the destination before saving. Chromium uses its favicon API for imported URL-only entries; Firefox can recover matching icons from currently open tabs, with a letter fallback when no icon is available. Missing icons are not sent to a third-party favicon service. Close controls have a smaller neutral glyph. Sync fingerprints are independent of JSON object key order, accept the previous fingerprint format and recognize an unchanged strong remote ETag while retaining conditional upload and real conflict protection. Actual Koofr account testing was not available; no claim is made that every provider-specific conflict is resolved.
 
 Validation: complete project validation, 75 automated tests, Chromium/Firefox builds and packaging, manifest checks, Firefox lint and dependency audit. Controlled browser fixtures exercise the full dashboard; native installed-extension and live Koofr acceptance remain unverified. The full dashboard retains a desktop minimum width; the panel stacks below content on narrower desktop windows.
+
+## Version 1.15.0: reviewed improvements
+
+Choose browser, day-first, month-first, or ISO date display. New generated collection names and saved-date labels follow the preference. Preview, select, apply, and undo recognized older generated names; custom names, automatic snapshots, trashed content, and locked folders are excluded. Collection tools filter saved titles and URLs, sort the display by title or domain, select matching tabs, restore a subset, duplicate a collection, or copy a selection into another unlocked workspace while preserving originals. Export selected or all HTTP(S) links as Markdown or bookmark HTML after reviewing the full-URL privacy notice.
+
+In **Settings → Date display**, select **Day / month / year** to address month-first browser locale settings. Use **Preview old date names** to review saved names before applying changes; **Undo name changes** only restores names that have not been edited since. In a saved workspace, expand **Collection tools**, choose a collection, and select matching tabs. Display sorting does not reorder stored tabs. Copies keep originals. Link exports contain full URLs, including query strings, and are not recovery backups.

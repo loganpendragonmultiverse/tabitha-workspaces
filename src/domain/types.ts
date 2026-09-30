@@ -75,6 +75,8 @@ export interface Note extends BaseEntity {
   tags: string[];
 }
 
+export type DateFormat = 'system' | 'day-first' | 'month-first' | 'iso';
+
 export type Theme = 'system' | 'light' | 'dark';
 export type Density = 'comfortable' | 'compact';
 export type SessionLayout = 'cards' | 'compact' | 'list';
@@ -82,6 +84,7 @@ export type CollectionSortMode = 'custom' | 'newest' | 'oldest' | 'alphabetical'
 export type SearchScope = 'all' | 'workspace' | 'collection' | 'url';
 
 export interface Settings {
+  dateFormat: DateFormat;
   theme: Theme;
   density: Density;
   accent: string;

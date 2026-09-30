@@ -1,3 +1,4 @@
+import { selectedSavedTabs, availableCollections } from '../src/domain/workspaceTools';
 import { browser } from 'wxt/browser';
 import type { BackgroundRequest, BackgroundResponse, LiveTab } from '../src/browser/messages';
 import { createId } from '../src/domain/defaults';
@@ -122,13 +123,21 @@ const captureActiveLink = async (requestedWorkspaceId?: string): Promise<SavedLi
   return link;
 };
 
-const restoreCollection = async (collectionId: string, forceNewWindow = false): Promise<string> => {
+const restoreCollection = async (
+  collectionId: string,
+  forceNewWindow = false,
+  tabIds?: string[],
+): Promise<string> => {
   const state = await getLibrary();
   const collection = state.collections.find((item) => item.id === collectionId && !item.trashedAt);
-  if (!collection) throw new Error('That collection no longer exists.');
+  if (
+    !collection ||
+    !availableCollections(state, collection.workspaceId).some((c) => c.id === collectionId)
+  )
+    throw new Error('That collection is unavailable or locked.');
   const current = await browser.tabs.query({});
   const plan = createRestorePlan(
-    collection.tabs,
+    selectedSavedTabs(collection, tabIds),
     current.flatMap((tab) => (tab.url ? [tab.url] : [])),
     state.settings.deduplicateOnRestore,
   );
@@ -348,7 +357,11 @@ export default defineBackground(() => {
           case 'restore-collection':
             return {
               ok: true,
-              message: await restoreCollection(request.collectionId, request.newWindow),
+              message: await restoreCollection(
+                request.collectionId,
+                request.newWindow,
+                request.tabIds,
+              ),
             };
           case 'open-url':
             await openUrl(request.url);

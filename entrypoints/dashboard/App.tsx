@@ -1,3 +1,5 @@
+import { WorkspaceTools } from './WorkspaceTools';
+import { DatePreferences } from './DatePreferences';
 import { LiveCapturePanel } from './LiveCapturePanel';
 import { TabFavicon } from './TabFavicon';
 import { appendLiveTabs } from '../../src/domain/liveCapture';
@@ -12,7 +14,7 @@ import type {
   LiveTab,
 } from '../../src/browser/messages';
 import { createId } from '../../src/domain/defaults';
-import { formatSystemDate } from '../../src/domain/dateFormat';
+import { formatPreferredDate } from '../../src/domain/dateFormat';
 import { applyWorkspaceLayout } from '../../src/domain/collectionView';
 import {
   insertCollectionAtTop,
@@ -58,6 +60,7 @@ import type {
   SearchResult,
   SearchScope,
   Settings,
+  DateFormat,
   Workspace,
 } from '../../src/domain/types';
 import {
@@ -69,6 +72,7 @@ import {
   removeFolderProtection,
   replaceStoredLibrary,
   setLibrary,
+  updateLibrary,
   unlockFolder,
 } from '../../src/storage/libraryStore';
 
@@ -100,13 +104,13 @@ const send = async (request: BackgroundRequest): Promise<BackgroundResponse> =>
 const active = <T extends BaseEntity>(items: T[]): T[] =>
   items.filter((item) => !item.trashedAt).sort((left, right) => left.order - right.order);
 
-const timeLabel = (timestamp?: number): string => {
+const timeLabel = (timestamp?: number, format: DateFormat = 'system'): string => {
   if (!timestamp) return 'Never';
   const delta = Date.now() - timestamp;
   if (delta < 60_000) return 'Just now';
   if (delta < 3_600_000) return `${Math.floor(delta / 60_000)}m ago`;
   if (delta < 86_400_000) return `${Math.floor(delta / 3_600_000)}h ago`;
-  return formatSystemDate(timestamp);
+  return formatPreferredDate(timestamp, format);
 };
 
 const download = (filename: string, contents: string): void => {
@@ -902,67 +906,79 @@ export function App() {
 
         <div class="content">
           {view === 'overview' && (
-            <Overview
-              library={library}
-              workspaceId={selectedWorkspaceId}
-              onView={setView}
-              onRestore={restoreCollection}
-              onEdit={setEditor}
-              onTrash={trash}
-              onCapture={captureWindow}
-              onDrag={setDragged}
-              onDrop={handleDrop}
-              onTabDrop={moveTabToCollection}
-              onUpdate={(collection) =>
-                persist({
-                  ...library,
-                  collections: library.collections.map((item) =>
-                    item.id === collection.id ? collection : item,
-                  ),
-                })
-              }
-              onLayoutChange={(sessionLayout) =>
-                void persist({
-                  ...library,
-                  settings: applyWorkspaceLayout(
-                    library.settings,
-                    library.collections,
-                    selectedWorkspaceId,
-                    sessionLayout,
-                  ),
-                })
-              }
-              onSortChange={(collectionSort) =>
-                void persist({
-                  ...library,
-                  settings: {
-                    ...library.settings,
-                    collectionSortByWorkspace: {
-                      ...library.settings.collectionSortByWorkspace,
-                      [selectedWorkspaceId]: collectionSort,
+            <>
+              <WorkspaceTools
+                key={selectedWorkspaceId}
+                library={library}
+                workspaceId={selectedWorkspaceId}
+                onApply={async (change) => setLocalLibrary(await updateLibrary(change))}
+                onRestore={async (collectionId, tabIds) => {
+                  const response = await send({ type: 'restore-collection', collectionId, tabIds });
+                  return response.ok ? (response.message ?? 'Restored.') : response.error;
+                }}
+              />
+              <Overview
+                library={library}
+                workspaceId={selectedWorkspaceId}
+                onView={setView}
+                onRestore={restoreCollection}
+                onEdit={setEditor}
+                onTrash={trash}
+                onCapture={captureWindow}
+                onDrag={setDragged}
+                onDrop={handleDrop}
+                onTabDrop={moveTabToCollection}
+                onUpdate={(collection) =>
+                  persist({
+                    ...library,
+                    collections: library.collections.map((item) =>
+                      item.id === collection.id ? collection : item,
+                    ),
+                  })
+                }
+                onLayoutChange={(sessionLayout) =>
+                  void persist({
+                    ...library,
+                    settings: applyWorkspaceLayout(
+                      library.settings,
+                      library.collections,
+                      selectedWorkspaceId,
+                      sessionLayout,
+                    ),
+                  })
+                }
+                onSortChange={(collectionSort) =>
+                  void persist({
+                    ...library,
+                    settings: {
+                      ...library.settings,
+                      collectionSortByWorkspace: {
+                        ...library.settings.collectionSortByWorkspace,
+                        [selectedWorkspaceId]: collectionSort,
+                      },
                     },
-                  },
-                })
-              }
-              onCollapsedChange={(collapsedCollectionIds) =>
-                void persist({
-                  ...library,
-                  settings: { ...library.settings, collapsedCollectionIds },
-                })
-              }
-              renamingCollectionId={renamingCollectionId}
-              focusedCollectionId={focusedCollectionId}
-              selectedCollectionIds={selectedCollectionIds}
-              onCollectionSelectionChange={setSelectedCollectionIds}
-              onMergeSelected={mergeSelectedCollections}
-              onRenameComplete={() => setRenamingCollectionId('')}
-              onDismissWelcome={() =>
-                void persist({
-                  ...library,
-                  settings: { ...library.settings, showWelcomeBanner: false },
-                })
-              }
-            />
+                  })
+                }
+                onCollapsedChange={(collapsedCollectionIds) =>
+                  void persist({
+                    ...library,
+                    settings: { ...library.settings, collapsedCollectionIds },
+                  })
+                }
+                renamingCollectionId={renamingCollectionId}
+                focusedCollectionId={focusedCollectionId}
+                selectedCollectionIds={selectedCollectionIds}
+                onCollectionSelectionChange={setSelectedCollectionIds}
+                onMergeSelected={mergeSelectedCollections}
+                onRenameComplete={() => setRenamingCollectionId('')}
+                onDismissWelcome={() =>
+                  void persist({
+                    ...library,
+                    settings: { ...library.settings, showWelcomeBanner: false },
+                  })
+                }
+              />
+            </>
           )}
           {view === 'links' && (
             <Links
@@ -1003,6 +1019,10 @@ export function App() {
           )}
           {view === 'settings' && (
             <>
+              <DatePreferences
+                library={library}
+                onApply={async (change) => setLocalLibrary(await updateLibrary(change))}
+              />
               <DuplicateReview library={library} onApply={persist} />
               <SettingsView
                 settings={library.settings}
@@ -2107,7 +2127,7 @@ function Notes({
                   ))}
                 </div>
                 <footer>
-                  <small>Updated {timeLabel(item.updatedAt)}</small>
+                  <small>Updated {timeLabel(item.updatedAt, library.settings.dateFormat)}</small>
                   <button class="text-button danger" onClick={() => void onTrash('note', item.id)}>
                     Trash
                   </button>
@@ -2289,7 +2309,7 @@ function Trash({
               <span class="result-kind">{kind}</span>
               <div>
                 <h3>{item.name}</h3>
-                <small>Deleted {timeLabel(item.trashedAt)}</small>
+                <small>Deleted {timeLabel(item.trashedAt, library.settings.dateFormat)}</small>
               </div>
               <button class="button ghost" onClick={() => void onRestore(kind, item.id)}>
                 Restore
@@ -2563,7 +2583,9 @@ function SettingsView({
           </div>
           <small>
             Credentials stay in this browser and are excluded from exports and cloud backups.
-            {syncConfig?.lastSyncedAt ? ` Last synced ${timeLabel(syncConfig.lastSyncedAt)}.` : ''}
+            {syncConfig?.lastSyncedAt
+              ? ` Last synced ${timeLabel(syncConfig.lastSyncedAt, settings.dateFormat)}.`
+              : ''}
           </small>
           {(syncStatus || syncConfig?.lastError) && (
             <p class="sync-status" role="status">
