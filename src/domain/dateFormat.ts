@@ -19,7 +19,7 @@ const dateLocale = (format: DateFormat, locales?: string[]): string[] | undefine
   format === 'day-first' ? ['en-GB'] : format === 'month-first' ? ['en-US'] : locales;
 export const formatPreferredDate = (
   timestamp: number,
-  format: DateFormat = 'day-first',
+  format: DateFormat = 'system',
   locales = preferredLocales(),
 ): string => {
   if (format !== 'iso') return formatSystemDate(timestamp, dateLocale(format, locales));
@@ -32,7 +32,7 @@ export const formatPreferredDate = (
 };
 export const formatPreferredDateTime = (
   timestamp: number,
-  format: DateFormat = 'day-first',
+  format: DateFormat = 'system',
   locales = preferredLocales(),
 ): string => {
   if (format !== 'iso') return formatSystemDateTime(timestamp, dateLocale(format, locales));

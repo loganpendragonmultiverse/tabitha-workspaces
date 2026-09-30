@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 
 const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
+const readme = await readFile('README.md', 'utf8');
+const downloadLinks = [...readme.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)];
 
 const targets = [
   { directory: '.output/chrome-mv3', browser: 'chrome' },
@@ -8,6 +10,25 @@ const targets = [
 ];
 
 for (const target of targets) {
+  const downloadUrl =
+    'https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v' +
+    packageJson.version +
+    '/tabitha-workspaces-' +
+    packageJson.version +
+    '-' +
+    target.browser +
+    '.zip';
+  if (
+    !downloadLinks.some(
+      ([, label, url]) =>
+        url === downloadUrl &&
+        label.startsWith('Download Tabitha Workspaces ' + packageJson.version + ' for '),
+    )
+  ) {
+    throw new Error(
+      target.browser + ': README download label and URL must match version ' + packageJson.version,
+    );
+  }
   const manifest = JSON.parse(await readFile(`${target.directory}/manifest.json`, 'utf8'));
   if (manifest.manifest_version !== 3 || manifest.version !== packageJson.version) {
     throw new Error(`${target.browser}: expected Manifest V3 version ${packageJson.version}`);
@@ -54,4 +75,6 @@ for (const target of targets) {
   }
 }
 
-console.log('Validated Chromium and Firefox manifests, permissions, and runtime entrypoints.');
+console.log(
+  'Validated Chromium and Firefox manifests, permissions, and runtime entrypoints, and current README download labels/URLs.',
+);

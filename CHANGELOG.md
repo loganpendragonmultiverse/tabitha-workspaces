@@ -2,6 +2,17 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## [1.16.1] - 2026-09-30
+
+### Fixed
+
+- Restore browser locale as the default for new libraries and missing/invalid settings, preserving every valid saved date format rather than guessing older user intent.
+- Correct current README download labels to match the release URLs and build examples.
+
+### Changed
+
+- Collapse generated date-name repair into a contextual section shown only when repair, review or Undo is available. Keep reviewed repairs and their safeguards; never rename automatically.
+
 ## [1.16.0] - 2026-09-30
 
 ### Fixed

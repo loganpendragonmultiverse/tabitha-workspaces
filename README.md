@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.15.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.16.0/tabitha-workspaces-1.16.0-chrome.zip)
-- [Download Tabitha Workspaces 1.15.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.16.0/tabitha-workspaces-1.16.0-firefox.zip)
+- [Download Tabitha Workspaces 1.16.1 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.16.1/tabitha-workspaces-1.16.1-chrome.zip)
+- [Download Tabitha Workspaces 1.16.1 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.16.1/tabitha-workspaces-1.16.1-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -135,8 +135,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.16.0-chrome.zip`
-- `.output/tabitha-workspaces-1.16.0-firefox.zip`
+- `.output/tabitha-workspaces-1.16.1-chrome.zip`
+- `.output/tabitha-workspaces-1.16.1-firefox.zip`
 
 ## Architecture
 
@@ -216,3 +216,11 @@ In **Settings → Date display**, select **Day / month / year** to address month
 New and upgraded libraries now default to **day / month / year**, even when the browser language is US English. The old unconfigured Browser locale setting migrates to day-first. Existing explicit day-first, month-first and ISO choices remain intact; choosing Browser locale again is supported and persists. Browser language is not a reliable indication of the computer's regional date settings. All manual capture entry points use the stored format. Existing collection names remain saved text: use Settings → Date display → Preview old date names, review the changes and apply them with Undo available. Custom names are retained.
 
 Collection tools now offers an exact **Filter by domain** selector alongside text search, **Copy selected URLs** to the clipboard, and **Remove selected saved tabs** with **Undo saved-tab removal**. Domain filtering changes only the visible rows. Clipboard copying includes full HTTP(S) URLs and query strings, after confirmation. Removal affects saved tabs only and keeps the collection and open browser tabs. Undo remains available in the current panel until you leave it or choose another collection; it refuses to overwrite subsequent saved-tab edits, additions, moves or removals. Locked, trashed and missing collections are refused. Keep a full-library JSON backup for durable recovery.
+
+## Version 1.16.1: reviewed improvements
+
+New libraries default to browser locale, so US-English browsers use month-first and British-English browsers use day-first. Browser language can differ from the operating system's region; select Day / month / year explicitly when needed. Every valid saved date preference remains intact, including preferences selected before 1.16 and formats assigned by 1.16's previous default. This patch never guesses which older choice was deliberate. Existing 1.16 users who want automatic browser dates can select Browser locale in Settings → Date display. JSON backup/import retains the saved format and library schema 3.
+
+Older generated-name repair is now a collapsed contextual section under Settings → Date display. It appears only when eligible older names need changing, a review is pending, or Undo is still available. Expand Repair older generated date names to preview, review and apply changes. After repair, Undo stays available in the current Settings session; when no repair is needed and there is no pending review/Undo, the section disappears. Custom names, locked folders and trashed collections retain the existing safeguards. No old names are changed automatically.
+
+Current download labels, URLs and build-output examples now agree on version 1.16.1. Historical version sections document their respective releases.
