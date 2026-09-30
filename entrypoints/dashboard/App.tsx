@@ -104,7 +104,7 @@ const send = async (request: BackgroundRequest): Promise<BackgroundResponse> =>
 const active = <T extends BaseEntity>(items: T[]): T[] =>
   items.filter((item) => !item.trashedAt).sort((left, right) => left.order - right.order);
 
-const timeLabel = (timestamp?: number, format: DateFormat = 'day-first'): string => {
+const timeLabel = (timestamp?: number, format: DateFormat = 'system'): string => {
   if (!timestamp) return 'Never';
   const delta = Date.now() - timestamp;
   if (delta < 60_000) return 'Just now';

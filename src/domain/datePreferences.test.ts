@@ -23,23 +23,25 @@ describe('date preference and reviewed name repair', () => {
   it('normalizes old backups and invalid preferences without changing the schema', () => {
     const s = createDefaultState();
     s.settings.dateFormat = 'invalid' as never;
-    expect(normalizeLibrary(s).settings.dateFormat).toBe('day-first');
+    expect(normalizeLibrary(s).settings.dateFormat).toBe('system');
     expect(normalizeLibrary(s).schemaVersion).toBe(3);
   });
-  it('migrates the old US-browser default but retains deliberate date choices', () => {
+  it('defaults to browser locale and preserves every saved format from prior releases', () => {
     const s = createDefaultState();
-    expect(s.settings.dateFormat).toBe('day-first');
-    s.settings.dateFormat = 'system';
-    expect(normalizeLibrary(s).settings.dateFormat).toBe('day-first');
-    s.settings.dateFormatExplicit = true;
-    expect(normalizeLibrary(s).settings.dateFormat).toBe('system');
-    s.settings.dateFormatExplicit = false;
-    for (const format of ['day-first', 'month-first', 'iso'] as const) {
-      s.settings.dateFormat = format;
-      expect(normalizeLibrary(s).settings.dateFormat).toBe(format);
+    expect(s.settings.dateFormat).toBe('system');
+    for (const format of ['system', 'day-first', 'month-first', 'iso'] as const) {
+      for (const explicit of [undefined, false, true]) {
+        s.settings.dateFormat = format;
+        if (explicit === undefined) delete s.settings.dateFormatExplicit;
+        else s.settings.dateFormatExplicit = explicit;
+        expect(normalizeLibrary(s).settings.dateFormat).toBe(format);
+      }
     }
-    expect(formatPreferredDateTime(stamp, undefined, ['en-US'])).toContain('27/09/2026');
+    expect(formatPreferredDateTime(stamp, undefined, ['en-US'])).toContain('9/27/26');
+    expect(formatPreferredDateTime(stamp, undefined, ['en-GB'])).toContain('27/09/2026');
     expect(normalizeLibrary(normalizeLibrary(s))).toEqual(normalizeLibrary(s));
+    delete (s.settings as Partial<typeof s.settings>).dateFormat;
+    expect(normalizeLibrary(s).settings.dateFormat).toBe('system');
   });
   it('honors the preference for newly generated names and retains custom names', () => {
     const s = createDefaultState();

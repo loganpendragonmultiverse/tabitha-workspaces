@@ -3,7 +3,7 @@ import type { Folder, LibraryState, Settings, Workspace } from './types';
 export const DEFAULT_ACCENT = '#5b6df8';
 
 export const defaultSettings = (): Settings => ({
-  dateFormat: 'day-first',
+  dateFormat: 'system',
   dateFormatExplicit: false,
   theme: 'system',
   density: 'comfortable',
