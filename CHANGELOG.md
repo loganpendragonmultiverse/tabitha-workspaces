@@ -2,6 +2,14 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 1.15.0 - 2026-09-30
+
+- Add explicit date-format preferences and reviewed repair with Undo for older generated collection names.
+- Add saved-tab search, display sorting, batch selection, and selected-tab restoration.
+- Add collection duplication and cross-workspace copies with fresh IDs and stale-source guards.
+- Add Markdown and bookmark HTML link exports that exclude notes, settings, and sync credentials.
+- Keep library schema 3, encrypted folders, WebDAV conflict handling, and existing full-library exports compatible.
+
 ## 1.14.0 - 2026-09-23
 
 - Made Workspaces close the live Open windows panel and changed the panel to compact favicon/title rows grouped under individually collapsible browser windows.

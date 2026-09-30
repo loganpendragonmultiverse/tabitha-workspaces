@@ -1,5 +1,5 @@
 import { createId, defaultSettings } from './defaults';
-import { formatSystemDateTime } from './dateFormat';
+import { formatPreferredDateTime, isDateFormat } from './dateFormat';
 import { isCollectionSortMode } from './collectionOrder';
 import type {
   CapturedBrowserTab,
@@ -55,7 +55,7 @@ export const createCollectionFromTabs = (
   const now = Date.now();
   return {
     id: createId(),
-    name: name.trim() || 'Collection ' + formatSystemDateTime(now),
+    name: name.trim() || 'Collection ' + formatPreferredDateTime(now, state.settings.dateFormat),
     workspaceId,
     description: '',
     tags: automatic ? ['recovery'] : [],
@@ -381,6 +381,9 @@ export const normalizeLibrary = (candidate: LibraryState): LibraryState => {
     settings: {
       ...defaultSettings(),
       ...candidate.settings,
+      dateFormat: isDateFormat(candidate.settings?.dateFormat)
+        ? candidate.settings.dateFormat
+        : 'system',
       collectionSortByWorkspace: Object.fromEntries(
         Object.entries(candidate.settings?.collectionSortByWorkspace ?? {}).filter(
           ([workspaceId, mode]) => workspaceId.length > 0 && isCollectionSortMode(mode),
