@@ -24,10 +24,13 @@ export const filterSavedTabs = (
   tabs: SavedTab[],
   query: string,
   sort: TabSort = 'saved',
+  exactDomain = '',
 ): SavedTab[] => {
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const result = tabs.filter((t) =>
-    words.every((w) => (t.title + ' ' + t.url).toLowerCase().includes(w)),
+  const result = tabs.filter(
+    (t) =>
+      (!exactDomain || domain(t.url) === exactDomain) &&
+      words.every((w) => (t.title + ' ' + t.url).toLowerCase().includes(w)),
   );
   return [...result].sort((a, b) =>
     sort === 'saved'
@@ -138,4 +141,63 @@ export const exportCollectionLinks = (
       .join('\n') +
     '\n</DL><p>\n'
   );
+};
+
+export const savedDomains = (tabs: SavedTab[]): string[] =>
+  [...new Set(tabs.map((tab) => domain(tab.url)).filter(Boolean))].sort();
+
+export const copyableUrls = (collection: Collection, ids: string[]): string => {
+  const urls = selectedSavedTabs(collection, ids)
+    .filter((tab) => /^https?:/.test(tab.url) && isRestorableUrl(tab.url))
+    .map((tab) => tab.url);
+  if (!urls.length) throw new Error('No HTTP or HTTPS links are available to copy.');
+  return urls.join('\n');
+};
+
+export interface TabRemovalUndo {
+  collectionId: string;
+  before: SavedTab[];
+  after: SavedTab[];
+}
+const editableCollection = (state: LibraryState, id: string): Collection => {
+  const collection = state.collections.find((c) => c.id === id);
+  if (!collection || !availableCollections(state, collection.workspaceId).some((c) => c.id === id))
+    throw new Error('The collection is unavailable. Unlock it and review it again.');
+  return collection;
+};
+export const removeSelectedTabs = (
+  state: LibraryState,
+  collectionId: string,
+  expectedTabs: SavedTab[],
+  ids: string[],
+): { state: LibraryState; undo: TabRemovalUndo } => {
+  const collection = editableCollection(state, collectionId);
+  if (JSON.stringify(collection.tabs) !== JSON.stringify(expectedTabs))
+    throw new Error('The collection changed. Review the selection again.');
+  const selected = new Set(selectedSavedTabs(collection, ids).map((tab) => tab.id));
+  const after = collection.tabs
+    .filter((tab) => !selected.has(tab.id))
+    .map((tab, order) => ({ ...tab, order }));
+  return {
+    state: {
+      ...state,
+      collections: state.collections.map((c) =>
+        c.id === collectionId ? { ...c, tabs: after, updatedAt: Date.now() } : c,
+      ),
+    },
+    undo: { collectionId, before: structuredClone(collection.tabs), after: structuredClone(after) },
+  };
+};
+export const undoTabRemoval = (state: LibraryState, undo: TabRemovalUndo): LibraryState => {
+  const collection = editableCollection(state, undo.collectionId);
+  if (JSON.stringify(collection.tabs) !== JSON.stringify(undo.after))
+    throw new Error('Saved tabs changed after removal. Undo cannot overwrite newer edits.');
+  return {
+    ...state,
+    collections: state.collections.map((c) =>
+      c.id === undo.collectionId
+        ? { ...c, tabs: structuredClone(undo.before), updatedAt: Date.now() }
+        : c,
+    ),
+  };
 };

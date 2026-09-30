@@ -39,7 +39,10 @@ export function DatePreferences({
           onChange={(e) => {
             const format = e.currentTarget.value as DateFormat;
             void run(async () => {
-              await onApply((s) => ({ ...s, settings: { ...s.settings, dateFormat: format } }));
+              await onApply((s) => ({
+                ...s,
+                settings: { ...s.settings, dateFormat: format, dateFormatExplicit: true },
+              }));
               setPreview([]);
               setSelected([]);
               setMessage(
@@ -48,14 +51,16 @@ export function DatePreferences({
             });
           }}
         >
-          <option value="system">Browser locale</option>
+          <option value="system">Browser locale (may use US dates)</option>
           <option value="day-first">Day / month / year</option>
           <option value="month-first">Month / day / year</option>
           <option value="iso">Year-month-day</option>
         </select>
       </label>
       <p>
-        New captures use this format. Example:{' '}
+        Day / month / year is the default, including upgrades from the old browser default. Explicit
+        browser locale follows browser language, which may differ from computer region. New captures
+        use this format. Example:{' '}
         {formatPreferredDateTime(
           new Date(2026, 8, 27, 16, 5).getTime(),
           library.settings.dateFormat,

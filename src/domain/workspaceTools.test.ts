@@ -3,6 +3,10 @@ import { createDefaultState } from './defaults';
 import { createCollectionFromTabs } from './library';
 import {
   availableCollections,
+  savedDomains,
+  copyableUrls,
+  removeSelectedTabs,
+  undoTabRemoval,
   copyCollection,
   exportCollectionLinks,
   filterSavedTabs,
@@ -97,5 +101,92 @@ describe('collection tools', () => {
     delete w.trashedAt;
     state.folders[0]!.trashedAt = 1;
     expect(availableCollections(state, w.id)).toEqual([]);
+  });
+});
+
+describe('reviewed saved-tab actions', () => {
+  it('filters an exact hostname, preserving paths, queries and saved order', () => {
+    const { collection } = fixture();
+    collection.tabs.push({
+      ...collection.tabs[0]!,
+      id: 'other',
+      url: 'https://sub.b.test/path',
+      order: 2,
+    });
+    const before = structuredClone(collection);
+    expect(savedDomains(collection.tabs)).toEqual(['a.test', 'b.test', 'sub.b.test']);
+    expect(filterSavedTabs(collection.tabs, '', 'saved', 'b.test').map((t) => t.url)).toEqual([
+      'https://b.test/?token=private',
+    ]);
+    expect(filterSavedTabs(collection.tabs, 'absent', 'domain', 'b.test')).toEqual([]);
+    expect(collection).toEqual(before);
+    expect(savedDomains([{ ...collection.tabs[0]!, url: 'bad' }])).toEqual([]);
+  });
+  it('copies selected full HTTP URLs in saved order and refuses unsafe or stale selections', () => {
+    const { collection } = fixture();
+    expect(copyableUrls(collection, collection.tabs.map((t) => t.id).reverse())).toBe(
+      'https://b.test/?token=private\nhttps://a.test',
+    );
+    expect(() => copyableUrls(collection, ['missing'])).toThrow();
+    collection.tabs = [{ ...collection.tabs[0]!, url: 'javascript:alert(1)' }];
+    expect(() => copyableUrls(collection, [collection.tabs[0]!.id])).toThrow('No HTTP');
+  });
+  it('removes and restores a subset with original identity, order and metadata', () => {
+    const { state, collection } = fixture();
+    const before = structuredClone(state);
+    const removed = removeSelectedTabs(state, collection.id, collection.tabs, [
+      collection.tabs[0]!.id,
+    ]);
+    expect(state).toEqual(before);
+    expect(removed.state.collections[0]!.tabs).toEqual([{ ...collection.tabs[1]!, order: 0 }]);
+    removed.state.collections[0]!.name = 'Renamed after removal';
+    const restored = undoTabRemoval(removed.state, removed.undo);
+    expect(restored.collections[0]!.tabs).toEqual(collection.tabs);
+    expect(restored.collections[0]!.name).toBe('Renamed after removal');
+    expect(restored.collections[0]!.tags).toEqual(collection.tags);
+    expect(restored.collections[0]!.tabs).not.toBe(removed.undo.before);
+  });
+  it('supports removing all tabs without deleting the collection', () => {
+    const { state, collection } = fixture();
+    const removed = removeSelectedTabs(
+      state,
+      collection.id,
+      collection.tabs,
+      collection.tabs.map((t) => t.id),
+    );
+    expect(removed.state.collections).toHaveLength(1);
+    expect(removed.state.collections[0]!.tabs).toEqual([]);
+    expect(undoTabRemoval(removed.state, removed.undo).collections[0]!.tabs).toEqual(
+      collection.tabs,
+    );
+  });
+  it('refuses stale removals, empty selections and Undo after tab edits', () => {
+    const { state, collection } = fixture();
+    expect(() => removeSelectedTabs(state, collection.id, [], [collection.tabs[0]!.id])).toThrow(
+      'changed',
+    );
+    expect(() => removeSelectedTabs(state, collection.id, collection.tabs, [])).toThrow();
+    const removed = removeSelectedTabs(state, collection.id, collection.tabs, [
+      collection.tabs[0]!.id,
+    ]);
+    removed.state.collections[0]!.tabs[0]!.title = 'New title';
+    expect(() => undoTabRemoval(removed.state, removed.undo)).toThrow('newer edits');
+  });
+  it('refuses locked, trashed and missing collections for removal and Undo', () => {
+    const { state, collection } = fixture();
+    const removed = removeSelectedTabs(state, collection.id, collection.tabs, [
+      collection.tabs[0]!.id,
+    ]);
+    for (const unavailable of [
+      { ...state, collections: [] },
+      { ...state, collections: state.collections.map((c) => ({ ...c, trashedAt: 1 })) },
+      { ...state, folders: state.folders.map((f) => ({ ...f, locked: true })) },
+      { ...state, workspaces: state.workspaces.map((w) => ({ ...w, trashedAt: 1 })) },
+    ]) {
+      expect(() =>
+        removeSelectedTabs(unavailable, collection.id, collection.tabs, [collection.tabs[0]!.id]),
+      ).toThrow('unavailable');
+      expect(() => undoTabRemoval(unavailable, removed.undo)).toThrow('unavailable');
+    }
   });
 });

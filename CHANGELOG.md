@@ -2,6 +2,19 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## [1.16.0] - 2026-09-30
+
+### Fixed
+
+- Default new and upgraded unconfigured libraries to day-first dates so US browser language no longer produces American dates on capture. Preserve explicit date choices and allow deliberate Browser locale selection.
+- Clarify browser language versus regional dates and retain reviewed repair/Undo for existing generated collection names.
+
+### Added
+
+- Exact-domain filtering for saved tabs, combined with title and URL search.
+- Confirmed clipboard copying of selected full HTTP(S) URLs in saved order.
+- Reviewed selected saved-tab removal with panel-local Undo, preserving collection metadata and browser tabs and refusing stale, locked or trashed data.
+
 ## 1.15.0 - 2026-09-30
 
 - Add explicit date-format preferences and reviewed repair with Undo for older generated collection names.
