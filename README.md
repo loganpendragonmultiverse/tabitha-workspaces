@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.17.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.0/tabitha-workspaces-1.17.0-chrome.zip)
-- [Download Tabitha Workspaces 1.17.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.0/tabitha-workspaces-1.17.0-firefox.zip)
+- [Download Tabitha Workspaces 1.17.1 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.1/tabitha-workspaces-1.17.1-chrome.zip)
+- [Download Tabitha Workspaces 1.17.1 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.1/tabitha-workspaces-1.17.1-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -135,8 +135,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.17.0-chrome.zip`
-- `.output/tabitha-workspaces-1.17.0-firefox.zip`
+- `.output/tabitha-workspaces-1.17.1-chrome.zip`
+- `.output/tabitha-workspaces-1.17.1-firefox.zip`
 
 ## Architecture
 
@@ -228,3 +228,7 @@ Current download labels, URLs and build-output examples now agree on version 1.1
 ## Read-only sync comparison (1.17.0)
 
 Settings → Cross-browser cloud sync → **Review both copies (read-only)** uses the saved WebDAV endpoint and existing permission to perform one download. It does not upload, restore, merge, store remote content or decrypt protected folders. The summary contains only counts of identical, different and one-sided folders/workspaces/collections/links/notes, plus settings/vault difference indicators. A concurrent local edit rejects the review. It is a point-in-time two-copy comparison: the common fingerprint is not a base snapshot, so one-sided items cannot be classified as additions or deletions. Export local backups before using the existing confirmed Download action. Upload still refuses real conflicts and requires remote validators. Real WebDAV-provider and installed-extension acceptance remain unverified until explicitly exercised.
+
+## Build dependency fixes (1.17.1)
+
+Update sharp to 0.35.5 and source-map-js to 1.2.2 for published security fixes in the development toolchain. Extension behavior, permissions and the library schema are unchanged. The full development audit still reports other advisories, including node-forge through the Firefox tooling; see [SECURITY.md](SECURITY.md). These updates do not establish that a released extension was compromised.
