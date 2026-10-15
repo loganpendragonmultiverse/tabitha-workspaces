@@ -142,6 +142,8 @@ Older generated-name repair is now a collapsed contextual section under Settings
 
 Current download labels, URLs and build-output examples now agree on version 1.16.1. Historical version sections document their respective releases.
 
-## 1.17.0 conflict-review candidate
+## 1.17.0 read-only sync review
 
 Add count-only two-copy inspection through one GET and a background-owned serialized review. Never apply a review, persist downloaded content, decrypt vaults or change sync configuration during review. Existing download confirmation, conflict detection, conditional upload and stale-restore guards remain unchanged. No three-way merge or base-snapshot storage is introduced. Require full validation and independent review before publication.
+
+Release validation: 100 automated tests, Chromium/Firefox builds, manifest checks, ZIP packaging, CodeQL and shipped-dependency audit pass. Independent technical review found no actionable findings. Installed Chromium/Firefox and live WebDAV-provider acceptance remain unverified. Firefox lint has one existing bundled innerHTML warning and no errors.
