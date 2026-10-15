@@ -1,6 +1,6 @@
 {
   "name": "tabitha-workspaces",
-  "version": "1.17.0",
+  "version": "1.17.1",
   "private": true,
   "description": "A private, local-first workspace and tab collection manager for Chromium and Firefox.",
   "type": "module",
@@ -36,7 +36,7 @@
     "eslint-config-prettier": "10.1.8",
     "globals": "16.5.0",
     "prettier": "3.9.0",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "typescript": "5.9.3",
     "typescript-eslint": "8.65.0",
     "vitest": "4.1.10",

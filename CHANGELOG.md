@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.17.1 - 2026-10-15
+
+- Update the development dependencies sharp to 0.35.5 and source-map-js to 1.2.2 for their published security fixes.
+- Document the unresolved development-only node-forge advisory and retain existing runtime dependencies, browser permissions and library behavior.
+
 ## 1.17.0 - 2026-10-15
 
 - Add a read-only, count-only comparison of local and saved WebDAV library copies before choosing existing recovery actions.
