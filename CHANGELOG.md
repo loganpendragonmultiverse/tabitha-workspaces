@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.17.0 - Unreleased
+
+- Add a read-only, count-only comparison of local and saved WebDAV library copies before choosing existing recovery actions.
+- Keep vaults opaque, reject stale local snapshots, serialize reviews with sync, and preserve all conflict and conditional-upload safeguards.
+
 All notable changes are documented here. This project follows Semantic Versioning.
 
 ## [1.16.1] - 2026-09-30

@@ -76,3 +76,7 @@ Older generated-name repair is now a collapsed contextual section under Settings
 Current download labels, URLs and build-output examples now agree on version 1.16.1. Historical version sections document their respective releases.
 
 Validation: npm run validate and npm audit --omit=dev. Installed Chromium acceptance covers fresh US/British browser locales, previous saved formats with missing/false/true explicit flags, JSON export/import, collapsed repair only when needed, repair/Undo retention and disappearance after revisiting Settings, custom names, capture and the existing collection tools. Native Firefox and live Koofr acceptance remain separate limits.
+
+## Read-only sync-review acceptance
+
+Compare identical, changed and one-sided entities without names, URLs, note text, IDs, credentials or vault ciphertext in the summary. Require exactly one GET, no PUT and no local/config writes; test missing/truncated/error responses and concurrent local edits. Verify the Settings comparison table, dismissal, and existing backup/confirmed-download controls in both browsers. No real provider acceptance is claimed from mocked HTTP fixtures.

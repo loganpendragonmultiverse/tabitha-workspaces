@@ -1,3 +1,4 @@
+import { compareLibraryCopies, type SyncReview } from './conflictReview';
 import { parseLibraryExport, serializeLibrary } from '../domain/importExport';
 import type { LibraryState } from '../domain/types';
 import type { CloudSyncConfig } from '../storage/cloudSyncStore';
@@ -193,4 +194,28 @@ export const assertRestoreSnapshotUnchanged = async (
     throw new Error(
       'Sync conflict: local library changed during the request. Retry after preserving current edits.',
     );
+};
+
+/** One GET only: never upload, restore, persist remote content or decrypt a vault. */
+export const reviewWebDavCopies = async (
+  config: CloudSyncConfig,
+  local: LibraryState,
+): Promise<SyncReview> => {
+  validateUrl(config.url);
+  const remote = await download(config);
+  return compareLibraryCopies(
+    local,
+    remote?.library ?? null,
+    Boolean(config.lastSyncedFingerprint),
+  );
+};
+
+export const reviewWebDavSnapshot = async (
+  config: CloudSyncConfig,
+  readLocal: () => Promise<LibraryState>,
+): Promise<SyncReview> => {
+  const started = await readLocal();
+  const review = await reviewWebDavCopies(config, started);
+  await assertRestoreSnapshotUnchanged(started, await readLocal());
+  return review;
 };
