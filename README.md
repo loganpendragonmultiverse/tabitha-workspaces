@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.16.1 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.16.1/tabitha-workspaces-1.16.1-chrome.zip)
-- [Download Tabitha Workspaces 1.16.1 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.16.1/tabitha-workspaces-1.16.1-firefox.zip)
+- [Download Tabitha Workspaces 1.17.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.0/tabitha-workspaces-1.17.0-chrome.zip)
+- [Download Tabitha Workspaces 1.17.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.0/tabitha-workspaces-1.17.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -135,8 +135,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.16.1-chrome.zip`
-- `.output/tabitha-workspaces-1.16.1-firefox.zip`
+- `.output/tabitha-workspaces-1.17.0-chrome.zip`
+- `.output/tabitha-workspaces-1.17.0-firefox.zip`
 
 ## Architecture
 
@@ -224,3 +224,7 @@ New libraries default to browser locale, so US-English browsers use month-first 
 Older generated-name repair is now a collapsed contextual section under Settings → Date display. It appears only when eligible older names need changing, a review is pending, or Undo is still available. Expand Repair older generated date names to preview, review and apply changes. After repair, Undo stays available in the current Settings session; when no repair is needed and there is no pending review/Undo, the section disappears. Custom names, locked folders and trashed collections retain the existing safeguards. No old names are changed automatically.
 
 Current download labels, URLs and build-output examples now agree on version 1.16.1. Historical version sections document their respective releases.
+
+## Read-only sync comparison (1.17.0)
+
+Settings → Cross-browser cloud sync → **Review both copies (read-only)** uses the saved WebDAV endpoint and existing permission to perform one download. It does not upload, restore, merge, store remote content or decrypt protected folders. The summary contains only counts of identical, different and one-sided folders/workspaces/collections/links/notes, plus settings/vault difference indicators. A concurrent local edit rejects the review. It is a point-in-time two-copy comparison: the common fingerprint is not a base snapshot, so one-sided items cannot be classified as additions or deletions. Export local backups before using the existing confirmed Download action. Upload still refuses real conflicts and requires remote validators. Real WebDAV-provider and installed-extension acceptance remain unverified until explicitly exercised.

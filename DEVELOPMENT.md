@@ -141,3 +141,9 @@ New libraries default to browser locale, so US-English browsers use month-first 
 Older generated-name repair is now a collapsed contextual section under Settings → Date display. It appears only when eligible older names need changing, a review is pending, or Undo is still available. Expand Repair older generated date names to preview, review and apply changes. After repair, Undo stays available in the current Settings session; when no repair is needed and there is no pending review/Undo, the section disappears. Custom names, locked folders and trashed collections retain the existing safeguards. No old names are changed automatically.
 
 Current download labels, URLs and build-output examples now agree on version 1.16.1. Historical version sections document their respective releases.
+
+## 1.17.0 read-only sync review
+
+Add count-only two-copy inspection through one GET and a background-owned serialized review. Never apply a review, persist downloaded content, decrypt vaults or change sync configuration during review. Existing download confirmation, conflict detection, conditional upload and stale-restore guards remain unchanged. No three-way merge or base-snapshot storage is introduced. Require full validation and independent review before publication.
+
+Release validation: 100 automated tests, Chromium/Firefox builds, manifest checks, ZIP packaging, CodeQL and shipped-dependency audit pass. Independent technical review found no actionable findings. Installed Chromium/Firefox and live WebDAV-provider acceptance remain unverified. Firefox lint has one existing bundled innerHTML warning and no errors.

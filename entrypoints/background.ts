@@ -24,6 +24,7 @@ import {
 import {
   assertRestoreSnapshotUnchanged,
   synchronizeWebDav,
+  reviewWebDavSnapshot,
   type SyncDirection,
 } from '../src/sync/webdav';
 
@@ -379,6 +380,19 @@ export default defineBackground(() => {
               config = await getCloudSyncConfig();
             }
             return { ok: true, syncConfig: publicCloudSyncConfig(config), message };
+          }
+          case 'review-cloud-sync': {
+            if (syncInProgress) throw new Error('A sync or review is already in progress.');
+            syncInProgress = true;
+            try {
+              const review = await reviewWebDavSnapshot(
+                await getCloudSyncConfig(),
+                getStoredLibrary,
+              );
+              return { ok: true, syncReview: review };
+            } finally {
+              syncInProgress = false;
+            }
           }
           case 'sync-cloud':
             return { ok: true, message: await syncCloud(request.direction) };
