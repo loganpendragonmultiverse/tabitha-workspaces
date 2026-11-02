@@ -1,3 +1,4 @@
+import type { SyncReview } from '../../src/sync/conflictReview';
 import { WorkspaceTools } from './WorkspaceTools';
 import { DatePreferences } from './DatePreferences';
 import { LiveCapturePanel } from './LiveCapturePanel';
@@ -2340,6 +2341,8 @@ function SettingsView({
   const [syncUsername, setSyncUsername] = useState('');
   const [syncPassword, setSyncPassword] = useState('');
   const [syncStatus, setSyncStatus] = useState('');
+  const [syncReview, setSyncReview] = useState<SyncReview | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
   const update = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     onChange({ ...settings, [key]: value });
 
@@ -2353,6 +2356,7 @@ function SettingsView({
   }, []);
 
   const saveSync = async (enabled: boolean): Promise<void> => {
+    setSyncReview(null);
     try {
       const url = new URL(syncUrl);
       if (url.protocol !== 'https:') throw new Error('Use an HTTPS WebDAV URL.');
@@ -2380,10 +2384,27 @@ function SettingsView({
   };
 
   const runSync = async (direction: 'auto' | 'upload' | 'download'): Promise<void> => {
+    setSyncReview(null);
     const response = await send({ type: 'sync-cloud', direction });
     setSyncStatus(response.ok ? (response.message ?? 'Sync complete.') : response.error);
     const refreshed = await send({ type: 'get-cloud-sync-config' });
     if (refreshed.ok && refreshed.syncConfig) setSyncConfig(refreshed.syncConfig);
+  };
+  const reviewSync = async (): Promise<void> => {
+    setSyncReview(null);
+    setReviewBusy(true);
+    try {
+      const response = await send({ type: 'review-cloud-sync' });
+      if (!response.ok) throw new Error(response.error);
+      setSyncReview(response.syncReview ?? null);
+      setSyncStatus('Comparison complete. Neither copy was changed.');
+    } catch {
+      setSyncStatus(
+        'Comparison could not finish. Neither copy was changed; retry after checking the saved WebDAV settings.',
+      );
+    } finally {
+      setReviewBusy(false);
+    }
   };
   return (
     <>
@@ -2568,6 +2589,13 @@ function SettingsView({
             <button class="button ghost" onClick={() => void saveSync(false)}>
               Save without auto-sync
             </button>
+            <button
+              class="button ghost"
+              disabled={reviewBusy || !syncConfig?.url}
+              onClick={() => void reviewSync()}
+            >
+              {reviewBusy ? 'Comparing…' : 'Review both copies (read-only)'}
+            </button>
             <button class="button ghost" onClick={() => void runSync('upload')}>
               Upload now
             </button>
@@ -2581,6 +2609,55 @@ function SettingsView({
               Download now
             </button>
           </div>
+          {syncReview && (
+            <section aria-label="Read-only sync comparison">
+              <h3>Two-copy comparison</h3>
+              <p>
+                {!syncReview.remoteExists
+                  ? 'No remote backup exists.'
+                  : syncReview.equivalent
+                    ? 'Both library snapshots match.'
+                    : 'The snapshots differ.'}{' '}
+                Neither copy was changed.
+              </p>
+              <p>
+                This is a point-in-time comparison, not a merge. Only a common fingerprint is
+                stored, so these counts cannot identify which side edited or deleted an item. Export
+                local backups before choosing Download now. Upload retains the existing conflict and
+                validator safeguards.
+              </p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Content</th>
+                    <th>Only here</th>
+                    <th>Only remote</th>
+                    <th>Different</th>
+                    <th>Same</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(syncReview.categories).map(([kind, counts]) => (
+                    <tr key={kind}>
+                      <th>{kind}</th>
+                      <td>{counts.localOnly}</td>
+                      <td>{counts.remoteOnly}</td>
+                      <td>{counts.different}</td>
+                      <td>{counts.identical}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p>
+                Settings differ: {syncReview.settingsDiffer ? 'yes' : 'no'}. Protected-folder
+                differences: {syncReview.protectedFoldersDiffer}. Encrypted vaults remain opaque; no
+                names, URLs, note text, credentials or remote content are included in this summary.
+              </p>
+              <button class="button ghost" onClick={() => setSyncReview(null)}>
+                Dismiss comparison
+              </button>
+            </section>
+          )}
           <small>
             Credentials stay in this browser and are excluded from exports and cloud backups.
             {syncConfig?.lastSyncedAt

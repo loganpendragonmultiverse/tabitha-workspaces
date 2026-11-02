@@ -1,3 +1,4 @@
+import type { SyncReview } from '../sync/conflictReview';
 import type { Collection, LibraryState } from '../domain/types';
 
 export interface CloudSyncPublicConfig {
@@ -23,6 +24,7 @@ export type BackgroundRequest =
   | { type: 'open-url'; url: string }
   | { type: 'get-live-tabs' }
   | { type: 'get-cloud-sync-config' }
+  | { type: 'review-cloud-sync' }
   | {
       type: 'save-cloud-sync-config';
       config: { enabled: boolean; url: string; username: string; password?: string };
@@ -46,6 +48,7 @@ export type BackgroundResponse =
       library?: LibraryState;
       tabs?: LiveTab[];
       syncConfig?: CloudSyncPublicConfig;
+      syncReview?: SyncReview;
       message?: string;
     }
   | { ok: false; error: string };
