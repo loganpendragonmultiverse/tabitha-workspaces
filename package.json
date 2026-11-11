@@ -31,17 +31,17 @@
     "@eslint/js": "10.0.1",
     "@preact/preset-vite": "2.10.6",
     "@types/node": "26.6.6",
-    "@vitest/coverage-v8": "4.1.12",
+    "@vitest/coverage-v8": "5.1.0",
     "eslint": "10.14.0",
     "eslint-config-prettier": "10.1.8",
-    "globals": "17.13.0",
+    "globals": "17.14.0",
     "prettier": "3.9.10",
     "sharp": "0.35.5",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "typescript-eslint": "8.72.1",
-    "vitest": "4.1.12",
-    "web-ext": "10.5.0",
-    "wxt": "0.20.27"
+    "vitest": "5.1.0",
+    "web-ext": "10.8.0",
+    "wxt": "0.21.5"
   },
   "engines": {
     "node": ">=20.19"
