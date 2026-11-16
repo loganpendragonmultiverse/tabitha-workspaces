@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.17.1 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.1/tabitha-workspaces-1.17.1-chrome.zip)
-- [Download Tabitha Workspaces 1.17.1 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.1/tabitha-workspaces-1.17.1-firefox.zip)
+- [Download Tabitha Workspaces 1.17.2 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.2/tabitha-workspaces-1.17.2-chrome.zip)
+- [Download Tabitha Workspaces 1.17.2 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.2/tabitha-workspaces-1.17.2-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -135,8 +135,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.17.1-chrome.zip`
-- `.output/tabitha-workspaces-1.17.1-firefox.zip`
+- `.output/tabitha-workspaces-1.17.2-chrome.zip`
+- `.output/tabitha-workspaces-1.17.2-firefox.zip`
 
 ## Architecture
 

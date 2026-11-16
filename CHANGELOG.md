@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.17.2 - 2026-11-16
+
+- Update the Preact runtime to 11.2.0 and roll the patched build-tooling lock into the browser archives.
+
 ## 1.17.1 - 2026-10-15
 
 - Update the development dependencies sharp to 0.35.5 and source-map-js to 1.2.2 for their published security fixes.
