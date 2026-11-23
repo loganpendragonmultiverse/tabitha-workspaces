@@ -266,6 +266,18 @@ describe('collection and workspace organization', () => {
     expect(source.tabs).toHaveLength(2);
   });
 
+  it('places a saved tab before a sibling and rejects a stale target', () => {
+    const source = fixture().collections[0]!;
+    const [first, second] = source.tabs;
+    const original = [source];
+    const result = moveSavedTab(original, source.id, second!.id, source.id, first!.id);
+    expect(result[0]!.tabs.map((t) => [t.id, t.order])).toEqual([
+      [second!.id, 0],
+      [first!.id, 1],
+    ]);
+    expect(moveSavedTab(original, source.id, second!.id, source.id, 'missing')).toBe(original);
+  });
+
   it('merges selected collections into a recoverable target', () => {
     const state = fixture();
     const source = state.collections[0]!;

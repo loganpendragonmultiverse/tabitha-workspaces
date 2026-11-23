@@ -334,7 +334,10 @@ export function App() {
     setToast('Collection moved to the selected workspace.');
   };
 
-  const moveTabToCollection = async (targetCollectionId: string): Promise<void> => {
+  const moveTabToCollection = async (
+    targetCollectionId: string,
+    beforeId?: string,
+  ): Promise<void> => {
     if (dragged?.kind === 'live') {
       try {
         await saveLiveSelection(dragged.ids, targetCollectionId, dragged.skip);
@@ -350,6 +353,7 @@ export function App() {
       dragged.collectionId,
       dragged.id,
       targetCollectionId,
+      beforeId,
     );
     if (nextCollections === library.collections) return;
     await persist({ ...library, collections: nextCollections });
@@ -1308,7 +1312,7 @@ function Overview({
   onCapture: () => Promise<void>;
   onDrag: (value: DragPayload) => void;
   onDrop: (kind: 'collection', id: string) => Promise<void>;
-  onTabDrop: (collectionId: string) => Promise<void>;
+  onTabDrop: (collectionId: string, beforeId?: string) => Promise<void>;
   onUpdate: (collection: Collection) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
   onSortChange: (sort: CollectionSortMode) => void;
@@ -1456,7 +1460,7 @@ function Collections({
   onCapture: () => Promise<void>;
   onDrag: (value: DragPayload) => void;
   onDrop: (kind: 'collection', id: string) => Promise<void>;
-  onTabDrop: (collectionId: string) => Promise<void>;
+  onTabDrop: (collectionId: string, beforeId?: string) => Promise<void>;
   onUpdate: (collection: Collection) => Promise<void>;
   onLayoutChange: (layout: Settings['sessionLayout']) => void;
   onSortChange: (sort: CollectionSortMode) => void;
@@ -1596,7 +1600,7 @@ function Collections({
               onDragStart={() => onDrag({ kind: 'collection', id: item.id })}
               onTabDragStart={(tabId) => onDrag({ kind: 'tab', id: tabId, collectionId: item.id })}
               onDrop={() => void onDrop('collection', item.id)}
-              onTabDrop={() => void onTabDrop(item.id)}
+              onTabDrop={(beforeId) => void onTabDrop(item.id, beforeId)}
             />
           ))}
         </div>
@@ -1640,7 +1644,7 @@ function CollectionGroup({
   onDragStart: () => void;
   onTabDragStart: (tabId: string) => void;
   onDrop: () => void;
-  onTabDrop: () => void;
+  onTabDrop: (beforeId?: string) => void;
 }) {
   const [renaming, setRenaming] = useState(renameRequested);
   const [name, setName] = useState(item.name);
@@ -1694,6 +1698,7 @@ function CollectionGroup({
       }}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
+        event.preventDefault();
         event.stopPropagation();
         if (event.dataTransfer?.types.includes('application/x-tabitha-tab')) onTabDrop();
         else onDrop();
@@ -1765,6 +1770,12 @@ function CollectionGroup({
             item.tabs.map((tab) => (
               <div
                 class="saved-tab-tile"
+                onDrop={(event) => {
+                  if (!event.dataTransfer?.types.includes('application/x-tabitha-tab')) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onTabDrop(tab.id);
+                }}
                 draggable
                 onDragStart={(event) => {
                   event.stopPropagation();
@@ -1840,7 +1851,7 @@ function SessionListEditor({
   onDragStart: () => void;
   onTabDragStart: (tabId: string) => void;
   onDrop: () => void;
-  onTabDrop: () => void;
+  onTabDrop: (beforeId?: string) => void;
 }) {
   const [tabs, setTabs] = useState(item.tabs);
   const [renaming, setRenaming] = useState(renameRequested);
@@ -1895,6 +1906,7 @@ function SessionListEditor({
       }}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
+        event.preventDefault();
         event.stopPropagation();
         if (event.dataTransfer?.types.includes('application/x-tabitha-tab')) onTabDrop();
         else onDrop();
@@ -1960,6 +1972,12 @@ function SessionListEditor({
         tabs.map((tab) => (
           <div
             class="editable-tab-row"
+            onDrop={(event) => {
+              if (!event.dataTransfer?.types.includes('application/x-tabitha-tab')) return;
+              event.preventDefault();
+              event.stopPropagation();
+              onTabDrop(tab.id);
+            }}
             draggable
             onDragStart={(event) => {
               event.stopPropagation();
