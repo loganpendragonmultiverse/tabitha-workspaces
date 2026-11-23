@@ -9,8 +9,8 @@ This project is a maintained, independent successor inspired by the discontinued
 
 ## Download
 
-- [Download Tabitha Workspaces 1.17.2 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.2/tabitha-workspaces-1.17.2-chrome.zip)
-- [Download Tabitha Workspaces 1.17.2 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.17.2/tabitha-workspaces-1.17.2-firefox.zip)
+- [Download Tabitha Workspaces 1.18.0 for Chrome and Chromium](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.18.0/tabitha-workspaces-1.18.0-chrome.zip)
+- [Download Tabitha Workspaces 1.18.0 for Firefox](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/download/v1.18.0/tabitha-workspaces-1.18.0-firefox.zip)
 - [View the latest release and release notes](https://github.com/loganpendragonmultiverse/tabitha-workspaces/releases/latest)
 
 After downloading, follow the short browser-specific steps in
@@ -47,6 +47,7 @@ After downloading, follow the short browser-specific steps in
 - Renames a collection directly from its heading and opens an individual saved tab from search or
   List layout.
 - Moves collections between workspaces by dragging them onto the workspace sidebar or editing them.
+- Drop a saved tab on another tab to place it immediately before that tab. Drop on the collection background to place it last.
 - Moves individual saved tabs between collections with drag and drop.
 - Removes one saved tab directly from its collection and persists inline tab edits when focus leaves
   the field or Enter is pressed.
@@ -135,8 +136,8 @@ Production output:
 
 - `.output/chrome-mv3/`
 - `.output/firefox-mv3/`
-- `.output/tabitha-workspaces-1.17.2-chrome.zip`
-- `.output/tabitha-workspaces-1.17.2-firefox.zip`
+- `.output/tabitha-workspaces-1.18.0-chrome.zip`
+- `.output/tabitha-workspaces-1.18.0-firefox.zip`
 
 ## Architecture
 

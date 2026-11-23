@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.18.0
+
+- Reorder saved tabs within a collection or place them precisely in another collection using a row or card as the drop target.
+
 ## 1.17.2 - 2026-11-16
 
 - Update the Preact runtime to 11.2.0 and roll the patched build-tooling lock into the browser archives.

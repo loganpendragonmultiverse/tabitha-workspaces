@@ -228,29 +228,25 @@ export const moveSavedTab = (
   sourceCollectionId: string,
   tabId: string,
   targetCollectionId: string,
+  beforeId?: string,
 ): Collection[] => {
-  if (sourceCollectionId === targetCollectionId) return collections;
   const source = collections.find((item) => item.id === sourceCollectionId && !item.trashedAt);
   const target = collections.find((item) => item.id === targetCollectionId && !item.trashedAt);
   const tab = source?.tabs.find((item) => item.id === tabId);
-  if (!source || !target || !tab) return collections;
+  if (!source || !target || !tab || beforeId === tabId) return collections;
+  const same = source === target;
+  const remaining = source.tabs.filter((item) => item.id !== tabId);
+  const destination = same ? [...remaining] : [...target.tabs];
+  const index = beforeId
+    ? destination.findIndex((item) => item.id === beforeId)
+    : destination.length;
+  if (index < 0 || (same && source.tabs.indexOf(tab) === index)) return collections;
+  destination.splice(index, 0, tab);
   const now = Date.now();
   return collections.map((item) => {
-    if (item.id === source.id)
-      return {
-        ...item,
-        tabs: item.tabs
-          .filter((savedTab) => savedTab.id !== tabId)
-          .map((savedTab, order) => ({ ...savedTab, order })),
-        updatedAt: now,
-      };
-    if (item.id === target.id)
-      return {
-        ...item,
-        tabs: [...item.tabs, { ...tab, order: item.tabs.length }],
-        updatedAt: now,
-      };
-    return item;
+    if (item !== source && item !== target) return item;
+    const tabs = item === target ? destination : remaining;
+    return { ...item, tabs: tabs.map((saved, order) => ({ ...saved, order })), updatedAt: now };
   });
 };
 
