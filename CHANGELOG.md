@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.18.0
+## 1.18.0 - 2026-11-23
 
 - Reorder saved tabs within a collection or place them precisely in another collection using a row or card as the drop target.
 
